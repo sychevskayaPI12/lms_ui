@@ -19,12 +19,10 @@ public class AuthUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        //по идее, отсюда обращаемся в бд, получаем юзера с его паролем и ролями.
-        //формочка сверит эти данные с теми, что были введены
         UserAuthInfo userAuthInfo = userServiceClient.getUserAuthInfoByLogin(username);
         return User.withUsername(username)
                 .password("{noop}" + userAuthInfo.getPassword())
-                .roles("USER")
+                .roles(userAuthInfo.getRoles().toArray(new String[0]))
                 .build();
     }
 }
