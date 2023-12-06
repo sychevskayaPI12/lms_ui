@@ -21,6 +21,7 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
 
+        login.setI18n(createLoginI18n());
         login.setAction("login");
 
         add(login);
@@ -35,6 +36,23 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
                 .containsKey("error")) {
             login.setError(true);
         }
+    }
+
+    private LoginI18n createLoginI18n(){
+        LoginI18n i18n = LoginI18n.createDefault();
+
+        i18n.getForm().setUsername("Логин");
+        i18n.getForm().setTitle("Вход в ситему:");
+        i18n.getForm().setSubmit("Войти");
+        i18n.getForm().setPassword("Пароль");
+        i18n.getForm().setForgotPassword("Забыли пароль?");
+       /* i18n.getErrorMessage().setTitle("Usuário/senha inválidos");
+        i18n.getErrorMessage()
+                .setMessage("Confira seu usuário e senha e tente novamente.");
+        i18n.setAdditionalInformation(
+                "Caso necessite apresentar alguma informação extra para o usuário"
+                        + " (como credenciais padrão), este é o lugar.");*/
+        return i18n;
     }
 }
 
