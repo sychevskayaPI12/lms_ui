@@ -45,12 +45,6 @@ public class MainView extends VerticalLayout {
             //todo
             infoLayout.add(new Button("Добавить информацию"));
         } else {
-            if(profileInfo.getTeacherInfo() != null) {
-                TextArea teacherInfoDiv = new TextArea();
-                teacherInfoDiv.setValue(profileInfo.getTeacherInfo().getDegree());
-                teacherInfoDiv.setReadOnly(true);
-                infoLayout.add(teacherInfoDiv);
-            }
             if(profileInfo.getStudentInfo() != null) {
                 TextArea studentInfoDiv = new TextArea();
                 studentInfoDiv.setValue(String.format("Студент %s курса\nГруппа %s",
@@ -58,6 +52,12 @@ public class MainView extends VerticalLayout {
                         profileInfo.getStudentInfo().getGroupCode()));
                 studentInfoDiv.setReadOnly(true);
                 infoLayout.add(studentInfoDiv);
+            }
+            if(profileInfo.getTeacherInfo() != null) {
+                TextArea teacherInfoDiv = new TextArea();
+                teacherInfoDiv.setValue(profileInfo.getTeacherInfo().getDegree());
+                teacherInfoDiv.setReadOnly(true);
+                infoLayout.add(teacherInfoDiv);
             }
         }
         add(infoLayout);
