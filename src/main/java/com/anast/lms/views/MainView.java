@@ -5,7 +5,10 @@ import com.anast.lms.service.external.ProfileServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -45,18 +48,28 @@ public class MainView extends VerticalLayout {
             //todo
             infoLayout.add(new Button("Добавить информацию"));
         } else {
+            //todo избавиться от textarea..
             if(profileInfo.getStudentInfo() != null) {
                 TextArea studentInfoDiv = new TextArea();
                 studentInfoDiv.setValue(String.format("Студент %s курса\nГруппа %s",
                         profileInfo.getStudentInfo().getCourse(),
                         profileInfo.getStudentInfo().getGroupCode()));
                 studentInfoDiv.setReadOnly(true);
+                studentInfoDiv.getStyle()
+                        .set("background-color", "lavender")
+                       // .set("border" , "1px solid palegoldenrod")
+                        .set("border-radius", "var(--lumo-border-radius-s)");
+
                 infoLayout.add(studentInfoDiv);
             }
             if(profileInfo.getTeacherInfo() != null) {
                 TextArea teacherInfoDiv = new TextArea();
                 teacherInfoDiv.setValue(profileInfo.getTeacherInfo().getDegree());
                 teacherInfoDiv.setReadOnly(true);
+                teacherInfoDiv.getStyle()
+                        .set("background-color", "floralwhite")
+                        // .set("border" , "1px solid palegoldenrod")
+                        .set("border-radius", "var(--lumo-border-radius-s)");
                 infoLayout.add(teacherInfoDiv);
             }
         }

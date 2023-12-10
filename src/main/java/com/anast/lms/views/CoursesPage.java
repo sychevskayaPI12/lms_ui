@@ -8,6 +8,13 @@ import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.vaadin.tabs.PagedTabs;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Route(value = "/my_courses", layout=MainLayout.class)
 @PageTitle("Мои курсы | LMS")
@@ -19,19 +26,41 @@ public class CoursesPage extends VerticalLayout {
     private final SecurityService securityService;
     private final StudyServiceClient studyClient;
 
+    private StudentCoursesView studentCoursesView;
+    private TeachersCoursesView teachersCoursesView;
+
+
     public CoursesPage(ProfileServiceClient profileClient, SecurityService securityService, StudyServiceClient studyClient) {
         this.profileClient = profileClient;
         this.securityService = securityService;
         this.studyClient = studyClient;
 
-        String login = securityService.getAuthenticatedUser().getUsername();
-        UserProfileInfo profileInfo = profileClient.getUserProfileInfo(login);
+        UserDetails userDetails = securityService.getAuthenticatedUser();
+        UserProfileInfo profileInfo = profileClient.getUserProfileInfo(userDetails.getUsername());
 
-        //todo debug
-        studyClient.getStudentCourser(profileInfo.getStudentInfo().getGroupCode(), true);
-        studyClient.getStudentCourser(profileInfo.getStudentInfo().getGroupCode(), false);
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-        studyClient.getStudentCourser(profileInfo.getStudentInfo().getGroupCode(), null);
+        this.studentCoursesView = new StudentCoursesView(studyClient, profileInfo);
+        this.teachersCoursesView = new TeachersCoursesView(studyClient, profileInfo);
+
+
+        if(roles.containsAll(Arrays.asList("ROLE_TEACHER", "ROLE_STUDENT"))) {
+
+            VerticalLayout container = new VerticalLayout();
+            PagedTabs tabs = new PagedTabs(container);
+            tabs.add("Занятия студента", this.studentCoursesView, false);
+            tabs.add("Занятия преподавателя", this.teachersCoursesView, false);
+            add(tabs, container);
+
+        } else if(roles.contains("ROLE_TEACHER")) {
+            add(this.teachersCoursesView);
+
+        } else if(roles.contains("ROLE_STUDENT")) {
+            add(this.studentCoursesView);
+        }
+
+        setSpacing(false);
 
     }
 }
