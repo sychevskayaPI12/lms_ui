@@ -190,6 +190,12 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-context</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.vaadin.tabs</groupId>
+            <artifactId>paged-tabs</artifactId>
+            <version>3.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
