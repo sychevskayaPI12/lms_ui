@@ -39,7 +39,7 @@ public class MainLayout extends AppLayout {
         HorizontalLayout div = new HorizontalLayout(new DrawerToggle(), header);
         div.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         div.setWidthFull();
-        div.setPadding(true);
+        div.setPadding(false);
 
         var mainHeader = new HorizontalLayout(div, userBar);
         mainHeader.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -56,6 +56,7 @@ public class MainLayout extends AppLayout {
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
 
         Tab personalTab = new Tab(new RouterLink("Моя страница", MainView.class));
+
         Tab personalCoursesTab = new Tab(new RouterLink("Мои курсы", CoursesPage.class));
 
         tabs.add(personalTab, personalCoursesTab);

@@ -36,41 +36,52 @@ public class MainView extends VerticalLayout {
         String login = securityService.getAuthenticatedUser().getUsername();
         UserProfileInfo profileInfo = profileClient.getUserProfileInfo(login);
 
-        H2 header = new H2();
+        setPadding(true);
+        setSpacing(true);
+        Label header = new Label();
         header.setWidthFull();
         header.setHeight("3%");
         header.setText(String.format("Добро пожаловать, %s!", profileInfo.getFullName()));
         header.getStyle().set("font-size", "var(--lumo-font-size-l)");
         add(header);
 
+        addInfoLayout(profileInfo);
+
+    }
+
+    private void addInfoLayout(UserProfileInfo profileInfo) {
         HorizontalLayout infoLayout = new HorizontalLayout();
         if(profileInfo.getTeacherInfo() == null && profileInfo.getStudentInfo() == null) {
             //todo
             infoLayout.add(new Button("Добавить информацию"));
         } else {
-            //todo избавиться от textarea..
-            if(profileInfo.getStudentInfo() != null) {
-                TextArea studentInfoDiv = new TextArea();
-                studentInfoDiv.setValue(String.format("Студент %s курса\nГруппа %s",
-                        profileInfo.getStudentInfo().getCourse(),
-                        profileInfo.getStudentInfo().getGroupCode()));
-                studentInfoDiv.setReadOnly(true);
-                studentInfoDiv.getStyle()
-                        .set("background-color", "lavender")
-                       // .set("border" , "1px solid palegoldenrod")
-                        .set("border-radius", "var(--lumo-border-radius-s)");
 
-                infoLayout.add(studentInfoDiv);
+            if(profileInfo.getStudentInfo() != null) {
+                VerticalLayout studentHelloLayout = new VerticalLayout();
+                Label label1 = new Label(String.format("Студент %s курса",
+                        profileInfo.getStudentInfo().getCourse()));
+                label1.getStyle().set("width", "max-content");
+                Label label2 = new Label(String.format("Группа %s", profileInfo.getStudentInfo().getGroupCode()));
+                label2.getStyle().set("width", "max-content");
+                studentHelloLayout.add(label1, label2);
+                studentHelloLayout.getStyle()
+                        .set("background-color", "lavenderblush")
+                        .set("border-radius", "var(--lumo-border-radius-s)")
+                        .set("width", "max-content");
+                studentHelloLayout.setSpacing(false);
+
+                infoLayout.add(studentHelloLayout);
             }
             if(profileInfo.getTeacherInfo() != null) {
-                TextArea teacherInfoDiv = new TextArea();
-                teacherInfoDiv.setValue(profileInfo.getTeacherInfo().getDegree());
-                teacherInfoDiv.setReadOnly(true);
-                teacherInfoDiv.getStyle()
-                        .set("background-color", "floralwhite")
-                        // .set("border" , "1px solid palegoldenrod")
+
+                VerticalLayout teacherHelloLayout = new VerticalLayout();
+                teacherHelloLayout.add(new Label(profileInfo.getTeacherInfo().getDegree()));
+                teacherHelloLayout.getStyle()
+                        //lavenderblush
+                        .set("background-color", "lavender")
                         .set("border-radius", "var(--lumo-border-radius-s)");
-                infoLayout.add(teacherInfoDiv);
+
+                infoLayout.add(teacherHelloLayout);
             }
         }
         add(infoLayout);

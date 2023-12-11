@@ -8,6 +8,7 @@ import com.anast.lms.service.external.StudyServiceClient;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
@@ -55,12 +56,16 @@ public class StudentCoursesView extends VerticalLayout {
 
         coursesListLayout = new VerticalLayout();
         coursesListLayout.setPadding(false);
-
-        //todo add scroll
-
         fillCoursesList(true);
 
-        add(select, coursesListLayout);
+        Scroller scroller = new Scroller(coursesListLayout);
+        scroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
+        scroller.setWidth("80%");
+        scroller.getStyle()
+                .set("border-bottom", "1px solid var(--lumo-contrast-20pct)")
+                .set("padding", "var(--lumo-space-m)");
+
+        add(select, scroller);
 
     }
 
@@ -85,45 +90,18 @@ public class StudentCoursesView extends VerticalLayout {
         VerticalLayout innerLayout = new VerticalLayout();
         Label title = new Label(course.getDiscipline().getTitle());
         Label teachers = new Label(getTeachersText(course.getTeachers()));
+        teachers.getStyle().set("font-size", "var(--lumo-font-size-s)");
         innerLayout.add(title, teachers);
         innerLayout.setSpacing(false);
 
         //element layout
-        HorizontalLayout layout = new HorizontalLayout();
+        HorizontalLayout layout = StudyUtils.getCourseItemLayout();
 
-        layout.getStyle().set("background-color", "ghostwhite")
-                .set("border" , "1px solid lavender")
-                .set("border-radius", "var(--lumo-border-radius-s)");
-        layout.setWidth("70%");
-        layout.setPadding(true);
-        layout.setVerticalComponentAlignment(Alignment.START);
-
-        layout.add(innerLayout, getExaminationLabel(course));
+        layout.add(innerLayout, StudyUtils.getExaminationLabel(course));
         layout.expand(innerLayout);
         return layout;
     }
 
-    private Label getExaminationLabel(Course course) {
-        Label label = new Label();
-
-        if(course.getDiscipline().isExamination()) {
-            label.setText("Экзамен");
-            label.getStyle()
-                    .set("border-top", "1px solid coral")
-                    //.set("border-bottom", "1px solid coral")
-                    .set("color", "coral")
-                    .set("border-radius", "var(--lumo-border-radius-s)");
-
-        } else {
-            label.setText("Зачет");
-            label.getStyle()
-                    .set("border-top", "1px solid cadetblue")
-                    //.set("border-bottom", "1px solid cadetblue")
-                    .set("color", "cadetblue")
-                    .set("border-radius", "var(--lumo-border-radius-s)");
-        }
-        return label;
-    }
 
     private String getTeachersText(Map<String, String> names) {
         if(names.size() == 0) {

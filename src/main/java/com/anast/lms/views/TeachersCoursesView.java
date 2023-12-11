@@ -5,8 +5,14 @@ import com.anast.lms.model.CourseSearchType;
 import com.anast.lms.model.UserProfileInfo;
 import com.anast.lms.service.StudyUtils;
 import com.anast.lms.service.external.StudyServiceClient;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
@@ -28,6 +34,7 @@ public class TeachersCoursesView extends VerticalLayout {
 
     private VerticalLayout coursesListLayout;
     private Select<String> select;
+    private Select<String> specialtySelect;
 
 
     public TeachersCoursesView(StudyServiceClient studyClient, UserProfileInfo profileInfo) {
@@ -53,18 +60,45 @@ public class TeachersCoursesView extends VerticalLayout {
         select.setValue(CourseSearchType.ACTIVE.getDisplay());
         select.addValueChangeListener(e -> selectChangeListener());
 
+        specialtySelect = new Select<>();
+        specialtySelect.setPlaceholder("Направление");
+        specialtySelect.setItems(studyClient.getSpecialties());
+
+        Button searchButton = new Button("Найти", new Icon(VaadinIcon.SEARCH));
+        searchButton.addClickListener(e -> searchCoursesEventListener());
+
+        Button clearButton = new Button("Сбросить");
+        clearButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        clearButton.addClickListener(e -> clearButtonListener());
+
         //todo filters fields + button
-        filterLayout.add(select);
+        filterLayout.add(select, specialtySelect, searchButton, clearButton);
 
         coursesListLayout = new VerticalLayout();
         coursesListLayout.setPadding(false);
 
-        //todo add scroll
-
         fillCoursesList(true);
 
-        add(select, coursesListLayout);
+        Scroller scroller = new Scroller(coursesListLayout);
+        scroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
+        scroller.setWidth("80%");
+        scroller.getStyle()
+                .set("border-bottom", "1px solid var(--lumo-contrast-20pct)")
+                .set("padding", "var(--lumo-space-m)");
 
+        add(filterLayout, scroller);
+
+    }
+
+    private void clearButtonListener() {
+        specialtySelect.clear();
+        select.setValue(CourseSearchType.ACTIVE.getDisplay());
+        fillCoursesList(true);
+    }
+
+    private void searchCoursesEventListener() {
+       fillCoursesList(specialtySelect.getValue(), null, null,
+               StudyUtils.defineSearchMode(select.getValue()));
     }
 
     private void selectChangeListener() {
@@ -89,7 +123,27 @@ public class TeachersCoursesView extends VerticalLayout {
     }
 
     private HorizontalLayout createCourseDisplayItem(Course course) {
-        //todo
-        return new HorizontalLayout();
+        VerticalLayout innerLayout = new VerticalLayout();
+        Label title = new Label(course.getDiscipline().getSpecialty() + " " + course.getDiscipline().getTitle());
+        Label descr = new Label(getDescription(course));
+        descr.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        innerLayout.add(title, descr);
+        innerLayout.setSpacing(false);
+
+        //element layout
+        HorizontalLayout layout = StudyUtils.getCourseItemLayout();
+
+        layout.add(innerLayout, StudyUtils.getExaminationLabel(course));
+        layout.expand(innerLayout);
+
+        return layout;
+    }
+
+    private String getDescription(Course course) {
+        return String.format("%s курс. %s. %s форма",
+                //calc course num
+                course.getDiscipline().getSemester(),
+                course.getDiscipline().getStageName(),
+                course.getDiscipline().getStudyFormShortName());
     }
 }
