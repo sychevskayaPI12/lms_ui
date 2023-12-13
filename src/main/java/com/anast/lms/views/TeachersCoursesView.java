@@ -17,6 +17,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
 
 import java.util.Arrays;
 import java.util.List;
@@ -135,6 +136,10 @@ public class TeachersCoursesView extends VerticalLayout {
 
         layout.add(innerLayout, StudyUtils.getExaminationLabel(course));
         layout.expand(innerLayout);
+
+        layout.addClickListener(e -> layout.getUI().ifPresent(ui -> ui.navigate(
+                CourseDetailPage.class, course.getId())
+        ));
 
         return layout;
     }
