@@ -49,8 +49,8 @@ public class CoursesPage extends VerticalLayout {
 
             VerticalLayout container = new VerticalLayout();
             PagedTabs tabs = new PagedTabs(container);
-            tabs.add("Занятия студента", this.studentCoursesView, false);
-            tabs.add("Занятия преподавателя", this.teachersCoursesView, false);
+            tabs.add("Курсы студента", this.studentCoursesView, false);
+            tabs.add("Курсы преподавателя", this.teachersCoursesView, false);
             add(tabs, container);
 
         } else if(roles.contains("ROLE_TEACHER")) {

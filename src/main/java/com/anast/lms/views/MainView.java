@@ -1,19 +1,24 @@
 package com.anast.lms.views;
 
+import com.anast.lms.model.SchedulerItem;
 import com.anast.lms.model.UserProfileInfo;
+import com.anast.lms.model.WeekScheduler;
 import com.anast.lms.service.external.ProfileServiceClient;
+import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Label;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
 
 @Route(layout=MainLayout.class)
 @PageTitle("Главная | LMS")
@@ -23,11 +28,13 @@ public class MainView extends VerticalLayout {
 
     private final ProfileServiceClient profileClient;
     private final SecurityService securityService;
+    private final StudyServiceClient studyClient;
 
 
-    public MainView(ProfileServiceClient profileClient, SecurityService securityService) {
+    public MainView(ProfileServiceClient profileClient, SecurityService securityService, StudyServiceClient studyClient) {
         this.profileClient = profileClient;
         this.securityService = securityService;
+        this.studyClient = studyClient;
         build();
     }
 
@@ -46,6 +53,7 @@ public class MainView extends VerticalLayout {
         add(header);
 
         addInfoLayout(profileInfo);
+        addCurrentScheduleLayout(profileInfo);
 
     }
 
@@ -85,5 +93,74 @@ public class MainView extends VerticalLayout {
             }
         }
         add(infoLayout);
+    }
+
+    private void addCurrentScheduleLayout(UserProfileInfo profileInfo) {
+
+        Short dayOfWeek = (short) LocalDate.now().getDayOfWeek().getValue();
+        if(profileInfo.getTeacherInfo() != null) {
+
+            VerticalLayout teacherDailyLayout = new VerticalLayout();
+            teacherDailyLayout.add(new Label("Занятия преподавателя на сегодня:"));
+
+            WeekScheduler scheduler = studyClient.getTeacherScheduler(profileInfo.getLogin(), true);
+            List<SchedulerItem> currentClasses = scheduler.getWeekClasses().get(dayOfWeek);
+            if(currentClasses == null || currentClasses.isEmpty()) {
+                teacherDailyLayout.add(new Label("Занятий нет"));
+            } else {
+                currentClasses.sort(Comparator.comparing(SchedulerItem::getNumber));
+                teacherDailyLayout.add(getTeacherDailyGrid(currentClasses));
+            }
+            add(teacherDailyLayout);
+        }
+
+        if(profileInfo.getStudentInfo() != null) {
+
+            VerticalLayout studentDailyLayout = new VerticalLayout();
+            studentDailyLayout.add(new Label("Занятия студента на сегодня:"));
+
+            WeekScheduler scheduler = studyClient.getStudentScheduler(profileInfo.getStudentInfo().getGroupCode(), true);
+            List<SchedulerItem> currentClasses = scheduler.getWeekClasses().get(dayOfWeek);
+            if(currentClasses == null || currentClasses.isEmpty()) {
+                studentDailyLayout.add(new Label("Занятий нет"));
+            } else {
+                currentClasses.sort(Comparator.comparing(SchedulerItem::getNumber));
+                studentDailyLayout.add(getStudentDailyGrid(currentClasses));
+            }
+            add(studentDailyLayout);
+        }
+    }
+
+    private Grid<SchedulerItem> getStudentDailyGrid(List<SchedulerItem> items) {
+        Grid<SchedulerItem> grid = new Grid<>(SchedulerItem.class, false);
+        grid.addColumn(SchedulerItem::getNumber).setHeader("Пара").setAutoWidth(true);
+        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина")
+                .setAutoWidth(true);
+        grid.addColumn(item -> item.getClassType().getTitle()).setAutoWidth(true);
+        grid.addColumn(SchedulerItem::getClassRoom).setHeader("Аудитория").setAutoWidth(true);
+
+
+        grid.addThemeVariants(GridVariant.LUMO_COMPACT);
+        grid.setAllRowsVisible(true);
+        grid.setWidth("75%");
+        grid.setItems(items);
+        return grid;
+    }
+
+    private Grid<SchedulerItem> getTeacherDailyGrid(List<SchedulerItem> items) {
+        Grid<SchedulerItem> grid = new Grid<>(SchedulerItem.class, false);
+        grid.addColumn(SchedulerItem::getNumber).setHeader("Пара").setAutoWidth(true);
+        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина")
+                .setAutoWidth(true);
+        grid.addColumn(item -> item.getClassType().getTitle()).setAutoWidth(true);
+        grid.addColumn(SchedulerItem::getGroups).setHeader("Группы").setAutoWidth(true);
+        grid.addColumn(SchedulerItem::getClassRoom).setHeader("Аудитория").setAutoWidth(true);
+
+
+        grid.addThemeVariants(GridVariant.LUMO_COMPACT);
+        grid.setAllRowsVisible(true);
+        grid.setWidth("75%");
+        grid.setItems(items);
+        return grid;
     }
 }
