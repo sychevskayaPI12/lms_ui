@@ -2,9 +2,14 @@ package com.anast.lms.service;
 
 import com.anast.lms.model.Course;
 import com.anast.lms.model.CourseSearchType;
+import com.anast.lms.model.SchedulerItem;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+
+import java.util.List;
 
 public class StudyUtils {
 
@@ -50,5 +55,36 @@ public class StudyUtils {
                     .set("border-radius", "var(--lumo-border-radius-s)");
         }
         return label;
+    }
+
+    public static Grid<SchedulerItem> getStudentDailyGrid(List<SchedulerItem> items) {
+        Grid<SchedulerItem> grid = new Grid<>(SchedulerItem.class, false);
+        grid.addColumn(SchedulerItem::getNumber).setHeader("Пара").setAutoWidth(true);
+        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина")
+                .setAutoWidth(true);
+        grid.addColumn(item -> item.getClassType().getTitle()).setAutoWidth(true);
+        grid.addColumn(SchedulerItem::getClassRoom).setHeader("Аудитория").setAutoWidth(true);
+
+
+        grid.addThemeVariants(GridVariant.LUMO_COMPACT);
+        grid.setAllRowsVisible(true);
+        grid.setItems(items);
+        return grid;
+    }
+
+    public static Grid<SchedulerItem> getTeacherDailyGrid(List<SchedulerItem> items) {
+        Grid<SchedulerItem> grid = new Grid<>(SchedulerItem.class, false);
+        grid.addColumn(SchedulerItem::getNumber).setHeader("Пара").setAutoWidth(true);
+        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина")
+                .setAutoWidth(true);
+        grid.addColumn(item -> item.getClassType().getTitle()).setAutoWidth(true);
+        grid.addColumn(SchedulerItem::getGroups).setHeader("Группы").setAutoWidth(true);
+        grid.addColumn(SchedulerItem::getClassRoom).setHeader("Аудитория").setAutoWidth(true);
+
+
+        grid.addThemeVariants(GridVariant.LUMO_COMPACT);
+        grid.setAllRowsVisible(true);
+        grid.setItems(items);
+        return grid;
     }
 }

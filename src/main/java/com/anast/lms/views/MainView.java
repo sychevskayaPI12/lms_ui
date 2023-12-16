@@ -3,6 +3,7 @@ package com.anast.lms.views;
 import com.anast.lms.model.SchedulerItem;
 import com.anast.lms.model.UserProfileInfo;
 import com.anast.lms.model.WeekScheduler;
+import com.anast.lms.service.StudyUtils;
 import com.anast.lms.service.external.ProfileServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
@@ -109,7 +110,9 @@ public class MainView extends VerticalLayout {
                 teacherDailyLayout.add(new Label("Занятий нет"));
             } else {
                 currentClasses.sort(Comparator.comparing(SchedulerItem::getNumber));
-                teacherDailyLayout.add(getTeacherDailyGrid(currentClasses));
+                Grid<SchedulerItem> grid = StudyUtils.getTeacherDailyGrid(currentClasses);
+                grid.setWidth("75%");
+                teacherDailyLayout.add(grid);
             }
             add(teacherDailyLayout);
         }
@@ -125,42 +128,11 @@ public class MainView extends VerticalLayout {
                 studentDailyLayout.add(new Label("Занятий нет"));
             } else {
                 currentClasses.sort(Comparator.comparing(SchedulerItem::getNumber));
-                studentDailyLayout.add(getStudentDailyGrid(currentClasses));
+                Grid<SchedulerItem> grid = StudyUtils.getStudentDailyGrid(currentClasses);
+                grid.setWidth("75%");
+                studentDailyLayout.add(grid);
             }
             add(studentDailyLayout);
         }
-    }
-
-    private Grid<SchedulerItem> getStudentDailyGrid(List<SchedulerItem> items) {
-        Grid<SchedulerItem> grid = new Grid<>(SchedulerItem.class, false);
-        grid.addColumn(SchedulerItem::getNumber).setHeader("Пара").setAutoWidth(true);
-        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина")
-                .setAutoWidth(true);
-        grid.addColumn(item -> item.getClassType().getTitle()).setAutoWidth(true);
-        grid.addColumn(SchedulerItem::getClassRoom).setHeader("Аудитория").setAutoWidth(true);
-
-
-        grid.addThemeVariants(GridVariant.LUMO_COMPACT);
-        grid.setAllRowsVisible(true);
-        grid.setWidth("75%");
-        grid.setItems(items);
-        return grid;
-    }
-
-    private Grid<SchedulerItem> getTeacherDailyGrid(List<SchedulerItem> items) {
-        Grid<SchedulerItem> grid = new Grid<>(SchedulerItem.class, false);
-        grid.addColumn(SchedulerItem::getNumber).setHeader("Пара").setAutoWidth(true);
-        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина")
-                .setAutoWidth(true);
-        grid.addColumn(item -> item.getClassType().getTitle()).setAutoWidth(true);
-        grid.addColumn(SchedulerItem::getGroups).setHeader("Группы").setAutoWidth(true);
-        grid.addColumn(SchedulerItem::getClassRoom).setHeader("Аудитория").setAutoWidth(true);
-
-
-        grid.addThemeVariants(GridVariant.LUMO_COMPACT);
-        grid.setAllRowsVisible(true);
-        grid.setWidth("75%");
-        grid.setItems(items);
-        return grid;
     }
 }

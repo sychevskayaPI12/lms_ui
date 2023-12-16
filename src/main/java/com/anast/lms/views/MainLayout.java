@@ -59,7 +59,9 @@ public class MainLayout extends AppLayout {
 
         Tab personalCoursesTab = new Tab(new RouterLink("Мои курсы", CoursesPage.class));
 
-        tabs.add(personalTab, personalCoursesTab);
+        Tab scheduleTab = new Tab(new RouterLink("Расписание", SchedulePage.class));
+
+        tabs.add(personalTab, personalCoursesTab, scheduleTab);
 
         addToDrawer(tabs);
     }
