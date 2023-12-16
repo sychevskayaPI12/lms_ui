@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("authService")
 public class AuthUserDetailsService implements UserDetailsService {
 
     private final UserServiceClient userServiceClient;
@@ -21,7 +21,7 @@ public class AuthUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserAuthInfo userAuthInfo = userServiceClient.getUserAuthInfoByLogin(username);
         return User.withUsername(username)
-                .password("{noop}" + userAuthInfo.getPassword())
+                .password(userAuthInfo.getPassword())
                 .roles(userAuthInfo.getRoles().toArray(new String[0]))
                 .build();
     }

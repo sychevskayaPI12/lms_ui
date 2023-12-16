@@ -1,10 +1,15 @@
 package com.anast.lms.service.security;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import javax.annotation.Resource;
 
 @EnableWebSecurity
 @Configuration
@@ -14,6 +19,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
     private static final String LOGIN_FAILURE_URL = "/login?error";
     private static final String LOGIN_URL = "/login";
     private static final String LOGOUT_SUCCESS_URL = "/login";
+
+    @Resource(name = "authService")
+    private AuthUserDetailsService userDetailsService;
 
     /**
      * Require login to access internal pages and configure login form.
@@ -45,18 +53,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
                 .and().logout().logoutSuccessUrl(LOGOUT_SUCCESS_URL);
     }
 
-    /*@Bean
-    @Override
-    public UserDetailsService userDetailsService() {
-        //todo выгребать откуда-то текущего юзера
-        UserDetails user = User.withUsername("user")
-                .password("{noop}userpass")
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(user);
-    }*/
-
     /**
      * Allows access to static resources, bypassing Spring Security.
      */
@@ -84,5 +80,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter{
 
                 // (development mode) H2 debugging console
                 "/h2-console/**");
+    }
+
+    @Bean
+    public DaoAuthenticationProvider createDaoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(10);
     }
 }
