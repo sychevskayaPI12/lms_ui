@@ -103,5 +103,5 @@ public class StudentCoursesView extends VerticalLayout {
         layout.expand(innerLayout);
         return layout;
     }
-    
+
 }
