@@ -13,11 +13,9 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteParameters;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Route(value = "/my_courses/student")
@@ -90,7 +88,7 @@ public class StudentCoursesView extends VerticalLayout {
 
         VerticalLayout innerLayout = new VerticalLayout();
         Label title = new Label(course.getDiscipline().getTitle());
-        Label teachers = new Label(getTeachersText(course.getTeachers()));
+        Label teachers = new Label(getTeachersText(course.getDiscipline().getTeachers()));
         teachers.getStyle().set("font-size", "var(--lumo-font-size-s)");
         innerLayout.add(title, teachers);
         innerLayout.setSpacing(false);
@@ -107,14 +105,15 @@ public class StudentCoursesView extends VerticalLayout {
     }
 
 
-    private String getTeachersText(Map<String, String> names) {
-        if(names.size() == 0) {
+    private String getTeachersText(List<UserProfileInfo> teachers) {
+        if(teachers.size() == 0) {
             return "Преподаватель еще не назначен";
         }
-        if(names.size() == 1) {
-            return "Преподаватель: " + names.values().stream().findFirst().get();
+        if(teachers.size() == 1) {
+            return "Преподаватель: " + teachers.get(0).getFullName();
         }
 
-        return "Преподаватели: " + String.join(", ", names.values());
+        List<String> fullNames = teachers.stream().map(UserProfileInfo::getFullName).collect(Collectors.toList());
+        return "Преподаватели: " + String.join(", ", fullNames);
     }
 }
