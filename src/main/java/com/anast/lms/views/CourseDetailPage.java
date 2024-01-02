@@ -4,12 +4,15 @@ import com.anast.lms.model.*;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.details.Details;
-import com.vaadin.flow.component.details.DetailsVariant;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.*;
+import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResource;
 
+import java.io.*;
 import java.util.List;
 
 @Route(value = "/my_courses/:id?/view", layout=MainLayout.class)
@@ -71,6 +74,22 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
         content.setMaxHeight("400px");
 
         layout.add(content);
+
+        for (ModuleResource resource : module.getResources()) {
+
+            StreamResource streamResource = null;
+            try {
+                FileInputStream fileInputStream = new FileInputStream(resource.getFile());
+                streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> fileInputStream);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            Anchor anchor = new Anchor(streamResource, resource.getDisplayFileName());
+            anchor.setTarget( "_blank" );  // Specify `_blank` to open in a new browser tab/window.
+            layout.add(anchor);
+
+        }
 
         //layout.getStyle().set("border-top", "1px solid cadetblue");
         layout.setWidthFull();
