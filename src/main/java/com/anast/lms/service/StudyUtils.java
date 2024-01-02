@@ -3,6 +3,7 @@ package com.anast.lms.service;
 import com.anast.lms.model.Course;
 import com.anast.lms.model.CourseSearchType;
 import com.anast.lms.model.SchedulerItem;
+import com.anast.lms.model.UserProfileInfo;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Label;
@@ -10,6 +11,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class StudyUtils {
 
@@ -60,13 +62,16 @@ public class StudyUtils {
     public static Grid<SchedulerItem> getStudentDailyGrid(List<SchedulerItem> items) {
         Grid<SchedulerItem> grid = new Grid<>(SchedulerItem.class, false);
         grid.addColumn(SchedulerItem::getNumber).setHeader("Пара").setAutoWidth(true);
-        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина")
-                .setAutoWidth(true);
+        grid.addColumn(item -> item.getDiscipline().getTitle()).setHeader("Дисциплина").setAutoWidth(true);
         grid.addColumn(item -> item.getClassType().getTitle()).setAutoWidth(true);
+        grid.addColumn(item-> getTeachersText(item.getDiscipline().getTeachers())).setHeader("Преподаватели")
+                .setAutoWidth(true);
         grid.addColumn(SchedulerItem::getClassRoom).setHeader("Аудитория").setAutoWidth(true);
 
 
         grid.addThemeVariants(GridVariant.LUMO_COMPACT);
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+
         grid.setAllRowsVisible(true);
         grid.setItems(items);
         return grid;
@@ -86,5 +91,17 @@ public class StudyUtils {
         grid.setAllRowsVisible(true);
         grid.setItems(items);
         return grid;
+    }
+
+    public static String getTeachersText(List<UserProfileInfo> teachers) {
+        if(teachers.size() == 0) {
+            return "Преподаватель еще не назначен";
+        }
+        if(teachers.size() == 1) {
+            return "Преподаватель: " + teachers.get(0).getFullName();
+        }
+
+        List<String> fullNames = teachers.stream().map(UserProfileInfo::getFullName).collect(Collectors.toList());
+        return "Преподаватели: " + String.join(", ", fullNames);
     }
 }
