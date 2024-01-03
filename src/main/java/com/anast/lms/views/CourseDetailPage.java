@@ -2,15 +2,19 @@ package com.anast.lms.views;
 
 import com.anast.lms.model.*;
 import com.anast.lms.service.external.StudyServiceClient;
+import com.anast.lms.service.security.SecurityService;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.*;
 import java.util.List;
@@ -22,12 +26,15 @@ import java.util.List;
 public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
     private final StudyServiceClient studyClient;
+    private final SecurityService securityService;
+
 
     private Integer currentCourseId;
 
-    public CourseDetailPage(StudyServiceClient studyClient) {
+    public CourseDetailPage(StudyServiceClient studyClient, SecurityService securityService) {
         this.studyClient = studyClient;
 
+        this.securityService = securityService;
     }
 
     @Override
@@ -47,6 +54,12 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
         Course course = courseDetailPage.getCourse();
         DisciplineInstance discipline = course.getDiscipline();
 
+        //если логин есть среди преподавателей или пользователь имеет права администратора
+        UserDetails userDetails = securityService.getAuthenticatedUser();
+        if (discipline.getTeacherLogins().contains(userDetails.getUsername())) {
+            buildPanel();
+        }
+
         Label title = new Label(discipline.getTitle());
         title.getStyle().set("font-size", "var(--lumo-font-size-l)")
                         .set("font-weight", "bold");
@@ -62,6 +75,17 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
 
         List<CourseModule> modules = courseDetailPage.getModules();
         modules.forEach(module -> add(buildModuleItem(module)));
+    }
+
+    private void buildPanel() {
+        HorizontalLayout panel = new HorizontalLayout();
+        Button editButton = new Button("Редактировать");
+        editButton.addClickListener(e -> editButton.getUI().ifPresent(ui -> ui.navigate(
+                CourseDetailEditPage.class, currentCourseId)
+        ));
+
+        panel.add(editButton);
+        add(panel);
     }
 
     private Details buildModuleItem(CourseModule module) {
