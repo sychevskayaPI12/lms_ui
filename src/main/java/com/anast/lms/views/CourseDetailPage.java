@@ -101,13 +101,10 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
 
         for (ModuleResource resource : module.getResources()) {
 
-            StreamResource streamResource = null;
-            try {
-                FileInputStream fileInputStream = new FileInputStream(resource.getFile());
-                streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> fileInputStream);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            StreamResource streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> {
+                byte[] fileDataArray = studyClient.getFileData(resource).getBody();
+                return new ByteArrayInputStream(fileDataArray);
+            });
 
             Anchor anchor = new Anchor(streamResource, resource.getDisplayFileName());
             anchor.setTarget( "_blank" );  // Specify `_blank` to open in a new browser tab/window.
@@ -117,6 +114,7 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
 
         //layout.getStyle().set("border-top", "1px solid cadetblue");
         layout.setWidthFull();
+        layout.setPadding(false);
 
         Details details = new Details(module.getTitle(), layout);
         details.setOpened(true);
