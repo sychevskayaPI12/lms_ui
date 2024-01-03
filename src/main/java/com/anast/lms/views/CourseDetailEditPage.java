@@ -5,22 +5,18 @@ import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
-import com.vaadin.flow.component.details.Details;
-import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
-import com.vaadin.flow.server.InputStreamFactory;
-import com.vaadin.flow.server.StreamResource;
-import org.springframework.security.core.userdetails.UserDetails;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +31,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
     private Integer currentCourseId;
     private VerticalLayout modulesLayout;
+    private ModulesUpdateRequest request = new ModulesUpdateRequest();
 
     private final static String TITLE_FIELD_ID = "module_title";
     private final static String CONTENT_FIELD_ID = "module_content";
@@ -65,9 +62,6 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         Course course = courseDetailPage.getCourse();
         DisciplineInstance discipline = course.getDiscipline();
 
-        //todo тут редактируемые элементы
-        //как потом собирать их в объект данных? неужели на каждый навесить листенер? или дать идентификаторы и при Сохранить собрать / распарсить?
-
         Label title = new Label(discipline.getTitle());
         title.getStyle().set("font-size", "var(--lumo-font-size-l)")
                 .set("font-weight", "bold");
@@ -81,7 +75,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             add(discDescription);
         }
 
-        Button addModule = new Button("Добавить модуль");
+        Button addModule = new Button("Добавить модуль", new Icon(VaadinIcon.PLUS));
         addModule.addClickListener(e -> modulesLayout.add(buildModuleItem(null)));
 
         List<CourseModule> modules = courseDetailPage.getModules();
@@ -97,52 +91,14 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
     }
 
 
-    private Details buildModuleItemOld(CourseModule module) {
+    private HorizontalLayout buildModuleItem(CourseModule module) {
 
-        VerticalLayout layout = new VerticalLayout();
-        TextArea content = new TextArea();
-        content.setValue(module.getContent());
-        content.setReadOnly(true);
-        content.setWidthFull();
-        content.setMaxHeight("400px");
-
-        layout.add(content);
-
-        for (ModuleResource resource : module.getResources()) {
-
-            StreamResource streamResource = null;
-            try {
-                FileInputStream fileInputStream = new FileInputStream(resource.getFile());
-                streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> fileInputStream);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            Anchor anchor = new Anchor(streamResource, resource.getDisplayFileName());
-            anchor.setTarget( "_blank" );  // Specify `_blank` to open in a new browser tab/window.
-            layout.add(anchor);
-
-        }
-
-        //layout.getStyle().set("border-top", "1px solid cadetblue");
-        layout.setWidthFull();
-
-        Details details = new Details(module.getTitle(), layout);
-        details.setOpened(true);
-        details.getStyle().set("width", "70%")
-                .set("border-top", "1px solid cadetblue")
-                .set("font-weight", "bold");
-
-
-        return details;
-    }
-
-    private VerticalLayout buildModuleItem(CourseModule module) {
-        VerticalLayout layout = new VerticalLayout();
+        HorizontalLayout itemMainLayout = new HorizontalLayout();
+        VerticalLayout moduleLayout = new VerticalLayout();
 
         TextField moduleTitle = new TextField();
         moduleTitle.setPlaceholder("Название модуля");
-        moduleTitle.setWidthFull();
+        moduleTitle.setWidth("80%");
         moduleTitle.setId(TITLE_FIELD_ID);
 
         TextArea content = new TextArea();
@@ -152,17 +108,30 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         content.setId(CONTENT_FIELD_ID);
 
         if(module != null) {
-            layout.setId(module.getId().toString());
+            itemMainLayout.setId(module.getId().toString());
             moduleTitle.setValue(module.getTitle());
             content.setValue(module.getContent());
         }
 
-        layout.add(moduleTitle, content);
+        moduleLayout.add(moduleTitle, content);
+        moduleLayout.getStyle().set("width", "95%");
+        moduleLayout.setSpacing(false);
 
-        layout.getStyle().set("width", "70%")
+
+        Button deleteModule = new Button(new Icon(VaadinIcon.TRASH));
+        deleteModule.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        deleteModule.addClickListener(e -> {
+            registerDeletedModule(itemMainLayout);
+            modulesLayout.remove(itemMainLayout);
+        });
+
+        itemMainLayout.add(moduleLayout, deleteModule);
+        itemMainLayout.setSpacing(false);
+        itemMainLayout.getStyle().set("width", "70%")
                 .set("border", "1px solid cadetblue")
                 .set("border-radius", "var(--lumo-border-radius-s)");
-        return layout;
+
+        return itemMainLayout;
     }
 
 
@@ -170,9 +139,9 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
         Button done = new Button("Сохранить");
         done.addClickListener(e -> {
-           List<CourseModule> updatedModules = getUpdatedModulesData();
+           request.setModules(getUpdatedModulesData());
            try{
-               studyClient.updateCourseModules(currentCourseId, updatedModules);
+               studyClient.updateCourseModules(currentCourseId, request);
                done.getUI().ifPresent(ui -> ui.navigate(
                        CourseDetailPage.class, currentCourseId));
            } catch (Exception ex) {
@@ -199,19 +168,28 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
         modulesLayout.getChildren().forEach(moduleLayout -> {
 
-            TextField titleComponent = (TextField) moduleLayout.getChildren().filter(c -> c.getId().get().equals(TITLE_FIELD_ID)).findAny().get();
-            TextArea contentComponent = (TextArea) moduleLayout.getChildren().filter(c -> c.getId().get().equals(CONTENT_FIELD_ID)).findAny().get();
-
             Integer moduleId = moduleLayout.getId().isPresent() ? Integer.valueOf(moduleLayout.getId().get()) : null;
+
+            Component contentLayout = moduleLayout.getChildren().findFirst().get();
+            TextField titleComponent = (TextField) contentLayout.getChildren().filter(c -> c.getId().get().equals(TITLE_FIELD_ID)).findAny().get();
+            TextArea contentComponent = (TextArea) contentLayout.getChildren().filter(c -> c.getId().get().equals(CONTENT_FIELD_ID)).findAny().get();
+
             String title = titleComponent.getValue();
             String content = contentComponent.getValue();
-
 
             CourseModule module = new CourseModule(moduleId, title, content, counterRef.orderCount, new ArrayList<>());
             updatedModules.add(module);
             counterRef.orderCount++;
         });
+
         return updatedModules;
+    }
+
+    private void registerDeletedModule(HorizontalLayout itemMainLayout) {
+        Integer moduleId = itemMainLayout.getId().isPresent() ? Integer.valueOf(itemMainLayout.getId().get()) : null;
+        if(moduleId != null) {
+            request.getDeletedModulesId().add(moduleId);
+        }
     }
 }
 
