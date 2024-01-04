@@ -93,13 +93,39 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
         VerticalLayout layout = new VerticalLayout();
         TextArea content = new TextArea();
         content.setValue(module.getContent());
+        content.getStyle().set("font-size", "var(--lumo-font-size-s)");
         content.setReadOnly(true);
         content.setWidthFull();
         content.setMaxHeight("400px");
-
         layout.add(content);
 
-        for (ModuleResource resource : module.getResources()) {
+        //материалы модуля
+        if(!module.getResources().isEmpty()) {
+            VerticalLayout moduleMaterials = new VerticalLayout();
+            moduleMaterials.add(new Label("Материалы:"));
+            appendResources(moduleMaterials, module.getResources());
+            layout.add(moduleMaterials);
+        }
+
+        //todo tasks + materials
+        layout.setWidthFull();
+
+        Details details = new Details(module.getTitle(), layout);
+        details.setOpened(true);
+        details.getStyle().set("width", "70%")
+                .set("border-top", "1px solid cadetblue")
+                .set("border-radius", "var(--lumo-border-radius-s)")
+                .set("font-weight", "bold")
+                .set("background-color", "whitesmoke");
+
+
+
+        return details;
+    }
+
+    private void appendResources(VerticalLayout layout, List<ModuleResource> resources) {
+
+        for (ModuleResource resource : resources) {
 
             StreamResource streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> {
                 byte[] fileDataArray = studyClient.getFileData(resource).getBody();
@@ -109,23 +135,7 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
             Anchor anchor = new Anchor(streamResource, resource.getDisplayFileName());
             anchor.setTarget( "_blank" );  // Specify `_blank` to open in a new browser tab/window.
             layout.add(anchor);
-
         }
-
-        //layout.getStyle().set("border-top", "1px solid cadetblue");
-        layout.setWidthFull();
-        layout.setPadding(false);
-
-        Details details = new Details(module.getTitle(), layout);
-        details.setOpened(true);
-        details.getStyle().set("width", "70%")
-                .set("border-top", "1px solid cadetblue")
-                .set("font-weight", "bold");
-
-
-        return details;
     }
-
-
 }
 

@@ -135,7 +135,7 @@ public class SchedulePage extends VerticalLayout {
         VerticalLayout dayLayout = new VerticalLayout();
         dayLayout.add(new Label(DayOfWeek.of(dayOfWeek).getDisplayName(TextStyle.FULL_STANDALONE, RuLocale) + ":"));
 
-        dayLayout.getStyle().set("border", "2px solid lightsteelblue")
+        dayLayout.getStyle().set("border", "1px solid lightsteelblue")
                 .set("border-radius", "var(--lumo-border-radius-s)");
         dayLayout.setWidth("80%");
         return dayLayout;
