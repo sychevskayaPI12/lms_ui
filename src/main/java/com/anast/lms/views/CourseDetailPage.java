@@ -11,6 +11,7 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
@@ -107,7 +108,14 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
             layout.add(moduleMaterials);
         }
 
-        //todo tasks + materials
+        if(!module.getModuleTasks().isEmpty()) {
+            VerticalLayout moduleTasks = new VerticalLayout();
+            moduleTasks.setSpacing(false);
+            moduleTasks.add(new Label("Задания:"));
+            appendTasks(moduleTasks, module.getModuleTasks());
+            layout.add(moduleTasks);
+        }
+
         layout.setWidthFull();
 
         Details details = new Details(module.getTitle(), layout);
@@ -135,6 +143,32 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
             Anchor anchor = new Anchor(streamResource, resource.getDisplayFileName());
             anchor.setTarget( "_blank" );  // Specify `_blank` to open in a new browser tab/window.
             layout.add(anchor);
+        }
+    }
+
+    private void appendTasks(VerticalLayout layout, List<Task> tasks) {
+
+        for(Task task : tasks) {
+            VerticalLayout taskLayout = new VerticalLayout();
+            taskLayout.add(new Label(task.getTaskTypeEnum().getTitle() + ": " + task.getTitle()));
+
+            if(task.getDescription() != null) {
+                TextArea taskDescription = new TextArea();
+                taskDescription.setValue(task.getDescription());
+                taskDescription.getStyle().set("font-size", "var(--lumo-font-size-s)");
+                taskDescription.setReadOnly(true);
+                taskDescription.setWidthFull();
+                taskDescription.setMaxHeight("200px");
+                taskLayout.add(taskDescription);
+            }
+
+            if (task.getDeadLine() != null) {
+                Label deadline = new Label("Срок сдачи: " + task.getDeadLine().toString());
+                taskLayout.add(deadline);
+            }
+
+            appendResources(taskLayout, task.getResources());
+            layout.add(taskLayout);
         }
     }
 }
