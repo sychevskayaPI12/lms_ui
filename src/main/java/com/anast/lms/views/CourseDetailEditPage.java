@@ -7,6 +7,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -16,7 +17,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
+import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResource;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +39,8 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
     private final static String TITLE_FIELD_ID = "module_title";
     private final static String CONTENT_FIELD_ID = "module_content";
+    private final static String MODULE_MATERIALS_LAYOUT_ID = "module_materials_layout";
+
 
 
     public CourseDetailEditPage(StudyServiceClient studyClient, SecurityService securityService) {
@@ -107,17 +113,22 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         content.setMaxHeight("400px");
         content.setId(CONTENT_FIELD_ID);
 
+        //ресурсы
+        VerticalLayout moduleMaterials = new VerticalLayout();
+        moduleMaterials.setId(MODULE_MATERIALS_LAYOUT_ID);
+
         if(module != null) {
             itemMainLayout.setId(module.getId().toString());
             moduleTitle.setValue(module.getTitle());
             content.setValue(module.getContent());
+            appendResources(moduleMaterials, module.getResources());
         }
 
-        moduleLayout.add(moduleTitle, content);
+        moduleLayout.add(moduleTitle, content, new Label("Материалы:"), moduleMaterials);
         moduleLayout.getStyle().set("width", "95%");
         moduleLayout.setSpacing(false);
 
-
+        //кнопка удаления в правом столбце
         Button deleteModule = new Button(new Icon(VaadinIcon.TRASH));
         deleteModule.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         deleteModule.addClickListener(e -> {
@@ -161,7 +172,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
     private List<CourseModule> getUpdatedModulesData() {
         List<CourseModule> updatedModules = new ArrayList<>();
-        //todo ресурсы
+        //todo ресурсы, задачи+ресурсы
         var counterRef = new Object() {
             short orderCount = 1;
         };
@@ -177,7 +188,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             String title = titleComponent.getValue();
             String content = contentComponent.getValue();
 
-            CourseModule module = new CourseModule(moduleId, title, content, counterRef.orderCount, new ArrayList<>());
+            CourseModule module = new CourseModule(moduleId, title, content, counterRef.orderCount, new ArrayList<>(), new ArrayList<>());
             updatedModules.add(module);
             counterRef.orderCount++;
         });
@@ -189,6 +200,42 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         Integer moduleId = itemMainLayout.getId().isPresent() ? Integer.valueOf(itemMainLayout.getId().get()) : null;
         if(moduleId != null) {
             request.getDeletedModulesId().add(moduleId);
+        }
+    }
+
+    private void registerDeletedResource(HorizontalLayout resourceLayout) {
+        Integer resourceId = resourceLayout.getId().isPresent() ? Integer.valueOf(resourceLayout.getId().get()) : null;
+        if(resourceId != null) {
+            request.getDeletedResources().add(resourceId);
+        }
+    }
+
+    private void appendResources(VerticalLayout layout, List<ModuleResource> resources) {
+
+        HorizontalLayout resourceItemLayout = new HorizontalLayout();
+
+        for (ModuleResource resource : resources) {
+
+            StreamResource streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> {
+                byte[] fileDataArray = studyClient.getFileData(resource).getBody();
+                return new ByteArrayInputStream(fileDataArray);
+            });
+
+            Button deleteResourceButton = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
+            deleteResourceButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            deleteResourceButton.addClickListener(e -> {
+                registerDeletedResource(resourceItemLayout);
+                layout.remove(resourceItemLayout);
+            });
+
+            Anchor anchor = new Anchor(streamResource, resource.getDisplayFileName());
+            anchor.setTarget( "_blank" );  // Specify `_blank` to open in a new browser tab/window.
+
+            resourceItemLayout.add(deleteResourceButton, anchor);
+            resourceItemLayout.setId(resource.getId().toString());
+            resourceItemLayout.setSpacing(false);
+            resourceItemLayout.setVerticalComponentAlignment(Alignment.CENTER);
+            layout.add(resourceItemLayout);
         }
     }
 }
