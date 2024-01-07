@@ -1,6 +1,7 @@
 package com.anast.lms.views;
 
 import com.anast.lms.model.*;
+import com.anast.lms.service.StudyUtils;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.Component;
@@ -16,13 +17,19 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.upload.Upload;
+import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import org.springframework.security.core.parameters.P;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Route(value = "/my_courses/:id?/edit", layout=MainLayout.class)
 @PageTitle("Мои курсы | LMS")
@@ -36,6 +43,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
     private Integer currentCourseId;
     private VerticalLayout modulesLayout;
     private ModulesUpdateRequest request = new ModulesUpdateRequest();
+    private UploadingCourseFilesContext uploadingContext = new UploadingCourseFilesContext();
 
     private final static String TITLE_FIELD_ID = "module_title";
     private final static String CONTENT_FIELD_ID = "module_content";
@@ -121,12 +129,16 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             itemMainLayout.setId(module.getId().toString());
             moduleTitle.setValue(module.getTitle());
             content.setValue(module.getContent());
-            appendResources(moduleMaterials, module.getResources());
+            appendResources(moduleMaterials, module.getResources(), false);
         }
 
-        moduleLayout.add(moduleTitle, content, new Label("Материалы:"), moduleMaterials);
+        moduleLayout.add(moduleTitle, content, moduleMaterials);
         moduleLayout.getStyle().set("width", "95%");
         moduleLayout.setSpacing(false);
+
+        //прикрепленае файлов для ресурсов
+        appendUploadElement(moduleLayout, moduleMaterials, module == null ? null : module.getId(),
+                UploadingCourseFilesContext.ResourceType.module);
 
         //кнопка удаления в правом столбце
         Button deleteModule = new Button(new Icon(VaadinIcon.TRASH));
@@ -172,23 +184,27 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
     private List<CourseModule> getUpdatedModulesData() {
         List<CourseModule> updatedModules = new ArrayList<>();
-        //todo ресурсы, задачи+ресурсы
+        //todo задачи+ресурсы
         var counterRef = new Object() {
             short orderCount = 1;
         };
 
         modulesLayout.getChildren().forEach(moduleLayout -> {
 
-            Integer moduleId = moduleLayout.getId().isPresent() ? Integer.valueOf(moduleLayout.getId().get()) : null;
+            Integer moduleId = StudyUtils.getIntegerIdFromComponent(moduleLayout);
 
             Component contentLayout = moduleLayout.getChildren().findFirst().get();
-            TextField titleComponent = (TextField) contentLayout.getChildren().filter(c -> c.getId().get().equals(TITLE_FIELD_ID)).findAny().get();
-            TextArea contentComponent = (TextArea) contentLayout.getChildren().filter(c -> c.getId().get().equals(CONTENT_FIELD_ID)).findAny().get();
+            TextField titleComponent = (TextField) contentLayout.getChildren().filter(c -> TITLE_FIELD_ID.equals(c.getId().get())).findAny().get();
+            TextArea contentComponent = (TextArea) contentLayout.getChildren().filter(c -> CONTENT_FIELD_ID.equals(c.getId().get())).findAny().get();
+            VerticalLayout resourcesLayout = (VerticalLayout) contentLayout.getChildren().filter(c -> MODULE_MATERIALS_LAYOUT_ID.equals(c.getId().get())).findAny().get();
 
             String title = titleComponent.getValue();
             String content = contentComponent.getValue();
 
-            CourseModule module = new CourseModule(moduleId, title, content, counterRef.orderCount, new ArrayList<>(), new ArrayList<>());
+            List<ModuleResource> moduleResources = getUpdatedResources(resourcesLayout);
+
+            //todo tasks
+            CourseModule module = new CourseModule(moduleId, title, content, counterRef.orderCount, moduleResources, new ArrayList<>());
             updatedModules.add(module);
             counterRef.orderCount++;
         });
@@ -197,28 +213,43 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
     }
 
     private void registerDeletedModule(HorizontalLayout itemMainLayout) {
-        Integer moduleId = itemMainLayout.getId().isPresent() ? Integer.valueOf(itemMainLayout.getId().get()) : null;
+        Integer moduleId = StudyUtils.getIntegerIdFromComponent(itemMainLayout);
         if(moduleId != null) {
             request.getDeletedModulesId().add(moduleId);
         }
     }
 
     private void registerDeletedResource(HorizontalLayout resourceLayout) {
-        Integer resourceId = resourceLayout.getId().isPresent() ? Integer.valueOf(resourceLayout.getId().get()) : null;
+        Integer resourceId = StudyUtils.getIntegerIdFromComponent(resourceLayout);
         if(resourceId != null) {
             request.getDeletedResources().add(resourceId);
         }
     }
 
-    private void appendResources(VerticalLayout layout, List<ModuleResource> resources) {
-
-        HorizontalLayout resourceItemLayout = new HorizontalLayout();
+    /**
+     * Отображение списка ресурсов модуля
+     *
+     * @param layout
+     * @param resources
+     * @param isNew - если ресурс был загружен, но еще не сохранен, отобразить элемент, но ссылка фиктивная.
+     *                  Отображение необходимо для дальнейшего парсинга по элементам
+     */
+    private void appendResources(VerticalLayout layout, List<ModuleResource> resources, boolean isNew) {
 
         for (ModuleResource resource : resources) {
 
+            HorizontalLayout resourceItemLayout = new HorizontalLayout();
+            if(!isNew) {
+                resourceItemLayout.setId(resource.getId().toString());
+            }
+
             StreamResource streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> {
-                byte[] fileDataArray = studyClient.getFileData(resource).getBody();
-                return new ByteArrayInputStream(fileDataArray);
+                if(isNew) {
+                    return new ByteArrayInputStream(new byte[0]);
+                } else {
+                    byte[] fileDataArray = studyClient.getFileData(resource).getBody();
+                    return new ByteArrayInputStream(fileDataArray);
+                }
             });
 
             Button deleteResourceButton = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
@@ -229,14 +260,61 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             });
 
             Anchor anchor = new Anchor(streamResource, resource.getDisplayFileName());
+            anchor.setId(resource.getFileName());
             anchor.setTarget( "_blank" );  // Specify `_blank` to open in a new browser tab/window.
 
             resourceItemLayout.add(deleteResourceButton, anchor);
-            resourceItemLayout.setId(resource.getId().toString());
             resourceItemLayout.setSpacing(false);
             resourceItemLayout.setVerticalComponentAlignment(Alignment.CENTER);
             layout.add(resourceItemLayout);
         }
+    }
+
+    /**
+     * Размещение элемента для загрузки файлов
+     *
+     * @param parentLayout лэйаут, где будет размещен элемент
+     * @param contentLayout лэйаут, где будет отображен новый ресурс
+     * @param parentEntityId идентификатор объекта, выступающего родителем для ресурса (Модуль/Задание)
+     * @param resourceType тип объекта родителя
+     */
+    private void appendUploadElement(VerticalLayout parentLayout, VerticalLayout contentLayout,
+                                     Integer parentEntityId, UploadingCourseFilesContext.ResourceType resourceType) {
+        MemoryBuffer memoryBuffer = new MemoryBuffer();
+        Upload materialUpload = new Upload(memoryBuffer);
+
+        materialUpload.addSucceededListener(event -> {
+            String mimeType = event.getMIMEType();
+
+            UploadingCourseFilesContext.UploadingFileResource resource = new UploadingCourseFilesContext.UploadingFileResource(
+                    UUID.randomUUID().toString() + "_" + event.getFileName(),
+                    event.getFileName(),
+                    event.getContentLength(),
+                    memoryBuffer.getInputStream(),
+                    resourceType
+            );
+            uploadingContext.registerFile(parentEntityId, resource);
+
+            //фиктивное отображение нового ресурса в списке
+            ModuleResource newModuleResource = new ModuleResource(null, resource.getFileName(), resource.getDisplayFileName());
+            appendResources(contentLayout, List.of(newModuleResource), true);
+        });
+
+        parentLayout.add(materialUpload);
+    }
+
+    /**
+     * Перебираем лэйаут ресурсов модуля, формируем список. Получаем имя файла из тайтла ссылки
+     */
+    private List<ModuleResource> getUpdatedResources(VerticalLayout resourcesLayout) {
+        List<ModuleResource> resourceList = new ArrayList<>();
+
+        resourcesLayout.getChildren().forEach(resLayout -> {
+            Integer resourceId = StudyUtils.getIntegerIdFromComponent(resLayout);
+            Anchor resAnchor = (Anchor) resLayout.getChildren().collect(Collectors.toList()).get(1);
+            resourceList.add(new ModuleResource(resourceId, resAnchor.getId().get(), resAnchor.getText()));
+        });
+        return resourceList;
     }
 }
 

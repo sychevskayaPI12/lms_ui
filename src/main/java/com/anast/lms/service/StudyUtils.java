@@ -4,6 +4,7 @@ import com.anast.lms.model.Course;
 import com.anast.lms.model.CourseSearchType;
 import com.anast.lms.model.SchedulerItem;
 import com.anast.lms.model.UserProfileInfo;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Label;
@@ -103,5 +104,9 @@ public class StudyUtils {
 
         List<String> fullNames = teachers.stream().map(UserProfileInfo::getFullName).collect(Collectors.toList());
         return "Преподаватели: " + String.join(", ", fullNames);
+    }
+
+    public static Integer getIntegerIdFromComponent(Component component) {
+        return component.getId().isPresent() ? Integer.valueOf(component.getId().get()) : null;
     }
 }
