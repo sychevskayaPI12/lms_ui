@@ -11,6 +11,8 @@ import java.util.stream.Stream;
 
 public final class SecurityUtils {
 
+    private static final String REGISTRATION_URL = "/registration";
+
     public SecurityUtils() { }
 
     /**
@@ -21,6 +23,10 @@ public final class SecurityUtils {
         return parameterValue != null
                 && Stream.of(RequestType.values())
                 .anyMatch(r -> r.getIdentifier().equals(parameterValue));
+    }
+
+    static boolean isPermittedToUnauthorized(HttpServletRequest request) {
+        return request.getRequestURI().equals(REGISTRATION_URL);
     }
 
     /**
