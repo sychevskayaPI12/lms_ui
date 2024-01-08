@@ -16,6 +16,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
@@ -55,6 +56,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
     private final static String TASK_DESCRIPTION_FIELD_ID = "task_description";
     private final static String TASKS_LAYOUT_ID = "task_layout";
     private final static String TASK_MATERIALS_LAYOUT_ID = "task_materials_layout";
+    private final static String TASK_TYPE_SELECT_ID = "task_type_select_id";
 
 
 
@@ -323,7 +325,11 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             titleTextField.setWidth("60%");
             titleTextField.setId(TASK_TITLE_FIELD_ID);
 
-            //todo type
+            Select<TaskType> taskTypeSelect = new Select<>();
+            taskTypeSelect.setItems(TaskType.values());
+            taskTypeSelect.setItemLabelGenerator(TaskType::getTitle);
+            taskTypeSelect.setPlaceholder("Тип задания");
+            taskTypeSelect.setId(TASK_TYPE_SELECT_ID);
 
             DatePicker deadLine = new DatePicker();
             deadLine.setLabel("Срок сдачи");
@@ -341,10 +347,11 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
                 titleTextField.setValue(task.getTitle());
                 deadLine.setValue(task.getDeadLine());
                 taskDescription.setValue(task.getDescription());
+                taskTypeSelect.setValue(TaskType.getTaskTypeEnum(task.getTaskType()));
                 appendResources(taskMaterialsLayout, task.getResources(), false);
             }
 
-            taskContentLayout.add(titleTextField, deadLine, taskDescription, taskMaterialsLayout);
+            taskContentLayout.add(titleTextField, taskTypeSelect, deadLine, taskDescription, taskMaterialsLayout);
 
             //прикрепленае файлов для задач
             appendUploadElement(taskContentLayout, taskMaterialsLayout, UploadingCourseFilesContext.ResourceType.task);
@@ -428,12 +435,12 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             TextField titleComponent = (TextField) getChildComponentById(taskContentLayout, TASK_TITLE_FIELD_ID);
             DatePicker deaLinePicker = (DatePicker) getChildComponentById(taskContentLayout, TASK_DEADLINE_FIELD_ID);
             TextArea taskDescriptionTextArea = (TextArea) getChildComponentById(taskContentLayout, TASK_DESCRIPTION_FIELD_ID);
-            //todo type
+            Select<TaskType> taskTypeSelect = (Select) getChildComponentById(taskContentLayout, TASK_TYPE_SELECT_ID);
             VerticalLayout resourcesLayout = (VerticalLayout) getChildComponentById(taskContentLayout, TASK_MATERIALS_LAYOUT_ID);
 
             List<ModuleResource> taskResources = getUpdatedResources(resourcesLayout);
-
-            Task updatedTask = new Task(taskId, TaskType.laboratory.getCode(), titleComponent.getValue(),
+            TaskType taskType = taskTypeSelect.getValue() != null ? taskTypeSelect.getValue() : TaskType.practical;
+            Task updatedTask = new Task(taskId, taskType.getCode(), titleComponent.getValue(),
                     taskDescriptionTextArea.getValue(), deaLinePicker.getValue(), taskResources);
             tasksList.add(updatedTask);
         });

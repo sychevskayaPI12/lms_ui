@@ -157,7 +157,7 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
                 taskLayout.add(deadline);
             }
 
-            if(task.getDescription() != null) {
+            if(task.getDescription() != null && !task.getDescription().isEmpty()) {
                 TextArea taskDescription = new TextArea();
                 taskDescription.setValue(task.getDescription());
                 taskDescription.getStyle().set("font-size", "var(--lumo-font-size-s)");
