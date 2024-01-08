@@ -11,55 +11,40 @@ import java.util.Map;
  */
 public class UploadingCourseFilesContext {
 
-    private Map<Integer, List<UploadingFileResource>> modulesFiles = new HashMap<>();
+    private List<UploadingFileResource> moduleResourceFiles = new ArrayList<>();
 
-    private Map<Integer, List<UploadingFileResource>> taskFiles = new HashMap<>();
-
-    private List<UploadingFileResource> filesForNewEntries = new ArrayList<>();
+    private List<UploadingFileResource> taskResourceFiles = new ArrayList<>();
 
 
-    public void registerFile(Integer parentEntryId, UploadingFileResource uploadingFileResource) {
+    public void registerFile(UploadingFileResource uploadingFileResource) {
         ResourceType resourceType = uploadingFileResource.getResourceType();
-
-        //todo стоит ли непривязанные ресурсы делить на типы или всё в кучу?
-        if(parentEntryId == null) {
-            filesForNewEntries.add(uploadingFileResource);
-            return;
-        }
-
         if(ResourceType.module.equals(resourceType)) {
-            registerModuleFile(parentEntryId, uploadingFileResource);
-
+            moduleResourceFiles.add(uploadingFileResource);
         } else if (ResourceType.task.equals(resourceType)) {
-            registerTaskFile(parentEntryId, uploadingFileResource);
+            taskResourceFiles.add(uploadingFileResource);
         }
     }
 
-    private void registerModuleFile(Integer moduleId, UploadingFileResource uploadingFileResource) {
-        if(moduleId == null) {
-            //todo
-            return;
-        }
-        if(modulesFiles.containsKey(moduleId)) {
-            modulesFiles.get(moduleId).add(uploadingFileResource);
-        } else {
-            modulesFiles.put(moduleId, List.of(uploadingFileResource));
-        }
+    public List<UploadingFileResource> getAllFilesToSave() {
+        List<UploadingFileResource> res = this.moduleResourceFiles;
+        res.addAll(this.taskResourceFiles);
+        return res;
+    }
+    public List<UploadingFileResource> getModuleResourceFiles() {
+        return moduleResourceFiles;
     }
 
-    private void registerTaskFile(Integer taskId, UploadingFileResource uploadingFileResource) {
-        if(taskId == null) {
-            //todo
-            return;
-        }
-        if(taskFiles.containsKey(taskId)) {
-            taskFiles.get(taskId).add(uploadingFileResource);
-        } else {
-            taskFiles.put(taskId, List.of(uploadingFileResource));
-        }
+    public void setModuleResourceFiles(List<UploadingFileResource> moduleResourceFiles) {
+        this.moduleResourceFiles = moduleResourceFiles;
     }
 
+    public List<UploadingFileResource> getTaskResourceFiles() {
+        return taskResourceFiles;
+    }
 
+    public void setTaskResourceFiles(List<UploadingFileResource> taskResourceFiles) {
+        this.taskResourceFiles = taskResourceFiles;
+    }
 
     /**
      * Вложенный класс для хранения данных о файле

@@ -22,10 +22,9 @@ import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
-import org.springframework.security.core.parameters.P;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -137,8 +136,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         moduleLayout.setSpacing(false);
 
         //прикрепленае файлов для ресурсов
-        appendUploadElement(moduleLayout, moduleMaterials, module == null ? null : module.getId(),
-                UploadingCourseFilesContext.ResourceType.module);
+        appendUploadElement(moduleLayout, moduleMaterials, UploadingCourseFilesContext.ResourceType.module);
 
         //кнопка удаления в правом столбце
         Button deleteModule = new Button(new Icon(VaadinIcon.TRASH));
@@ -165,11 +163,21 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
            request.setModules(getUpdatedModulesData());
            try{
                studyClient.updateCourseModules(currentCourseId, request);
+               try {
+                   uploadFilesData();
+               } catch (Exception ex) {
+                   //todo clear resources
+                   Notification notification = new Notification("Произошла ошибке при сохранении загруженных файлов");
+                   notification.open();
+                   ex.printStackTrace();
+               }
+
                done.getUI().ifPresent(ui -> ui.navigate(
                        CourseDetailPage.class, currentCourseId));
            } catch (Exception ex) {
-               Notification notification = new Notification("Ошибка при сохранении. Детали: " + ex.getMessage());
+               Notification notification = new Notification("Ошибка при сохранении данных курса");
                notification.open();
+               ex.printStackTrace();
            }
         });
 
@@ -275,16 +283,14 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
      *
      * @param parentLayout лэйаут, где будет размещен элемент
      * @param contentLayout лэйаут, где будет отображен новый ресурс
-     * @param parentEntityId идентификатор объекта, выступающего родителем для ресурса (Модуль/Задание)
      * @param resourceType тип объекта родителя
      */
     private void appendUploadElement(VerticalLayout parentLayout, VerticalLayout contentLayout,
-                                     Integer parentEntityId, UploadingCourseFilesContext.ResourceType resourceType) {
+                                     UploadingCourseFilesContext.ResourceType resourceType) {
         MemoryBuffer memoryBuffer = new MemoryBuffer();
         Upload materialUpload = new Upload(memoryBuffer);
 
         materialUpload.addSucceededListener(event -> {
-            String mimeType = event.getMIMEType();
 
             UploadingCourseFilesContext.UploadingFileResource resource = new UploadingCourseFilesContext.UploadingFileResource(
                     UUID.randomUUID().toString() + "_" + event.getFileName(),
@@ -293,7 +299,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
                     memoryBuffer.getInputStream(),
                     resourceType
             );
-            uploadingContext.registerFile(parentEntityId, resource);
+            uploadingContext.registerFile(resource);
 
             //фиктивное отображение нового ресурса в списке
             ModuleResource newModuleResource = new ModuleResource(null, resource.getFileName(), resource.getDisplayFileName());
@@ -315,6 +321,12 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             resourceList.add(new ModuleResource(resourceId, resAnchor.getId().get(), resAnchor.getText()));
         });
         return resourceList;
+    }
+
+    private void uploadFilesData() throws IOException {
+        for(UploadingCourseFilesContext.UploadingFileResource resource : uploadingContext.getAllFilesToSave()) {
+            studyClient.uploadFileData(resource.getFileData().readAllBytes(), resource.getFileName());
+        }
     }
 }
 

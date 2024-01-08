@@ -8,3 +8,6 @@ feign:
 services:
   user-service-url: ${SECURITY_SERVICE_URL:http://localhost:8081/user-service-service}
   studying-service-url: ${STUDY_SERVICE_URL:http://localhost:8082/studying-service-service}
+
+spring.servlet.multipart.max-file-size: 128MB
+spring.servlet.multipart.max-request-size: 128MB
