@@ -1,5 +1,7 @@
 package com.anast.lms.views;
 
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
@@ -20,11 +22,18 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         setSizeFull();
         setAlignItems(Alignment.CENTER);
         setJustifyContentMode(JustifyContentMode.CENTER);
+        setSpacing(false);
 
         login.setI18n(createLoginI18n());
         login.setAction("login");
 
-        add(login);
+        Button registrationButton = new Button("Регистрация");
+        registrationButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        registrationButton.addClickListener(e ->
+                registrationButton.getUI().ifPresent(ui -> ui.navigate(RegistrationPage.class)));
+        registrationButton.setWidth("15%");
+
+        add(login, registrationButton);
     }
 
     @Override
