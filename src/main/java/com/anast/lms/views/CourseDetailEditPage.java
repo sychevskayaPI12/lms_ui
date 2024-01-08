@@ -7,6 +7,7 @@ import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Label;
@@ -23,8 +24,10 @@ import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
 
+import javax.validation.constraints.NotNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -44,9 +47,15 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
     private ModulesUpdateRequest request = new ModulesUpdateRequest();
     private UploadingCourseFilesContext uploadingContext = new UploadingCourseFilesContext();
 
-    private final static String TITLE_FIELD_ID = "module_title";
+    private final static String MODULE_TITLE_FIELD_ID = "module_title";
     private final static String CONTENT_FIELD_ID = "module_content";
     private final static String MODULE_MATERIALS_LAYOUT_ID = "module_materials_layout";
+    private final static String TASK_TITLE_FIELD_ID = "task_title";
+    private final static String TASK_DEADLINE_FIELD_ID = "task_deadline";
+    private final static String TASK_DESCRIPTION_FIELD_ID = "task_description";
+    private final static String TASKS_LAYOUT_ID = "task_layout";
+    private final static String TASK_MATERIALS_LAYOUT_ID = "task_materials_layout";
+
 
 
 
@@ -112,7 +121,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         TextField moduleTitle = new TextField();
         moduleTitle.setPlaceholder("Название модуля");
         moduleTitle.setWidth("80%");
-        moduleTitle.setId(TITLE_FIELD_ID);
+        moduleTitle.setId(MODULE_TITLE_FIELD_ID);
 
         TextArea content = new TextArea();
         content.setPlaceholder("Детали курса");
@@ -123,20 +132,30 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         //ресурсы
         VerticalLayout moduleMaterials = new VerticalLayout();
         moduleMaterials.setId(MODULE_MATERIALS_LAYOUT_ID);
+        //задания
+        VerticalLayout tasksLayout = new VerticalLayout();
+        tasksLayout.setId(TASKS_LAYOUT_ID);
 
         if(module != null) {
             itemMainLayout.setId(module.getId().toString());
             moduleTitle.setValue(module.getTitle());
             content.setValue(module.getContent());
             appendResources(moduleMaterials, module.getResources(), false);
+            appendTasks(tasksLayout, module.getModuleTasks(), false);
         }
 
         moduleLayout.add(moduleTitle, content, moduleMaterials);
         moduleLayout.getStyle().set("width", "95%");
         moduleLayout.setSpacing(false);
 
-        //прикрепленае файлов для ресурсов
+        //прикрепление файлов для ресурсов
         appendUploadElement(moduleLayout, moduleMaterials, UploadingCourseFilesContext.ResourceType.module);
+
+        //задачи
+        Button addTask = new Button("Добавить задание", new Icon(VaadinIcon.PLUS));
+        addTask.addClickListener(e -> appendTasks(tasksLayout, List.of(new Task()), true));
+        addTask.setId("add_task_button");
+        moduleLayout.add(tasksLayout, addTask);
 
         //кнопка удаления в правом столбце
         Button deleteModule = new Button(new Icon(VaadinIcon.TRASH));
@@ -192,7 +211,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
     private List<CourseModule> getUpdatedModulesData() {
         List<CourseModule> updatedModules = new ArrayList<>();
-        //todo задачи+ресурсы
+
         var counterRef = new Object() {
             short orderCount = 1;
         };
@@ -202,17 +221,18 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             Integer moduleId = StudyUtils.getIntegerIdFromComponent(moduleLayout);
 
             Component contentLayout = moduleLayout.getChildren().findFirst().get();
-            TextField titleComponent = (TextField) contentLayout.getChildren().filter(c -> TITLE_FIELD_ID.equals(c.getId().get())).findAny().get();
+            TextField titleComponent = (TextField) contentLayout.getChildren().filter(c -> MODULE_TITLE_FIELD_ID.equals(c.getId().get())).findAny().get();
             TextArea contentComponent = (TextArea) contentLayout.getChildren().filter(c -> CONTENT_FIELD_ID.equals(c.getId().get())).findAny().get();
             VerticalLayout resourcesLayout = (VerticalLayout) contentLayout.getChildren().filter(c -> MODULE_MATERIALS_LAYOUT_ID.equals(c.getId().get())).findAny().get();
+            VerticalLayout tasksLayout = (VerticalLayout) contentLayout.getChildren().filter(c -> TASKS_LAYOUT_ID.equals(c.getId().get())).findAny().get();
 
             String title = titleComponent.getValue();
             String content = contentComponent.getValue();
 
             List<ModuleResource> moduleResources = getUpdatedResources(resourcesLayout);
+            List<Task> moduleTasks = getUpdatedTasks(tasksLayout);
 
-            //todo tasks
-            CourseModule module = new CourseModule(moduleId, title, content, counterRef.orderCount, moduleResources, new ArrayList<>());
+            CourseModule module = new CourseModule(moduleId, title, content, counterRef.orderCount, moduleResources, moduleTasks);
             updatedModules.add(module);
             counterRef.orderCount++;
         });
@@ -224,6 +244,13 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         Integer moduleId = StudyUtils.getIntegerIdFromComponent(itemMainLayout);
         if(moduleId != null) {
             request.getDeletedModulesId().add(moduleId);
+        }
+    }
+
+    private void registerDeletedTask(HorizontalLayout itemTaskLayout) {
+        Integer taskId = StudyUtils.getIntegerIdFromComponent(itemTaskLayout);
+        if(taskId != null) {
+            request.getDeletedTasks().add(taskId);
         }
     }
 
@@ -278,6 +305,70 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         }
     }
 
+    private void appendTasks(VerticalLayout layout, List<Task> tasks, boolean isNew) {
+
+        for (Task task : tasks) {
+
+            HorizontalLayout taskItemLayout = new HorizontalLayout();
+            if(!isNew) {
+                taskItemLayout.setId(task.getId().toString());
+            }
+
+            VerticalLayout taskContentLayout = new VerticalLayout();
+            VerticalLayout taskMaterialsLayout = new VerticalLayout();
+            taskMaterialsLayout.setId(TASK_MATERIALS_LAYOUT_ID);
+
+            TextField titleTextField = new TextField();
+            titleTextField.setPlaceholder("Наименование задания");
+            titleTextField.setWidth("60%");
+            titleTextField.setId(TASK_TITLE_FIELD_ID);
+
+            //todo type
+
+            DatePicker deadLine = new DatePicker();
+            deadLine.setLabel("Срок сдачи");
+            deadLine.setId(TASK_DEADLINE_FIELD_ID);
+
+            TextArea taskDescription = new TextArea();
+            taskDescription.setPlaceholder("Описание");
+            taskDescription.setId(TASK_DESCRIPTION_FIELD_ID);
+            taskDescription.getStyle().set("font-size", "var(--lumo-font-size-s)");
+            taskDescription.setWidthFull();
+            taskDescription.setMaxHeight("200px");
+
+
+            if(!isNew) {
+                titleTextField.setValue(task.getTitle());
+                deadLine.setValue(task.getDeadLine());
+                taskDescription.setValue(task.getDescription());
+                appendResources(taskMaterialsLayout, task.getResources(), false);
+            }
+
+            taskContentLayout.add(titleTextField, deadLine, taskDescription, taskMaterialsLayout);
+
+            //прикрепленае файлов для задач
+            appendUploadElement(taskContentLayout, taskMaterialsLayout, UploadingCourseFilesContext.ResourceType.task);
+
+            Button deleteTask = new Button(new Icon(VaadinIcon.TRASH));
+            deleteTask.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            deleteTask.addClickListener(e -> {
+               registerDeletedTask(taskItemLayout);
+                layout.remove(taskItemLayout);
+            });
+
+            taskContentLayout.setSpacing(false);
+            taskItemLayout.getStyle().set("width", "90%")
+                    .set("border", "1px solid cadetblue")
+                    .set("border-radius", "var(--lumo-border-radius-s)");
+
+            taskItemLayout.add(taskContentLayout, deleteTask);
+            taskItemLayout.setSpacing(false);
+            taskItemLayout.setVerticalComponentAlignment(Alignment.START);
+
+            layout.add(taskItemLayout);
+        }
+    }
+
     /**
      * Размещение элемента для загрузки файлов
      *
@@ -289,6 +380,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
                                      UploadingCourseFilesContext.ResourceType resourceType) {
         MemoryBuffer memoryBuffer = new MemoryBuffer();
         Upload materialUpload = new Upload(memoryBuffer);
+        materialUpload.setId("upload");
 
         materialUpload.addSucceededListener(event -> {
 
@@ -323,10 +415,39 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         return resourceList;
     }
 
+    /**
+     * Перебираем лэйаут задач, формируем список. Для каждой задачи получием ресурсы
+     */
+    private List<Task> getUpdatedTasks(VerticalLayout tasksLayout) {
+        List<Task> tasksList = new ArrayList<>();
+
+        tasksLayout.getChildren().forEach( taskItemLayout -> {
+            Integer taskId = StudyUtils.getIntegerIdFromComponent(taskItemLayout);
+
+            VerticalLayout taskContentLayout = (VerticalLayout) taskItemLayout.getChildren().collect(Collectors.toList()).get(0);
+            TextField titleComponent = (TextField) getChildComponentById(taskContentLayout, TASK_TITLE_FIELD_ID);
+            DatePicker deaLinePicker = (DatePicker) getChildComponentById(taskContentLayout, TASK_DEADLINE_FIELD_ID);
+            TextArea taskDescriptionTextArea = (TextArea) getChildComponentById(taskContentLayout, TASK_DESCRIPTION_FIELD_ID);
+            //todo type
+            VerticalLayout resourcesLayout = (VerticalLayout) getChildComponentById(taskContentLayout, TASK_MATERIALS_LAYOUT_ID);
+
+            List<ModuleResource> taskResources = getUpdatedResources(resourcesLayout);
+
+            Task updatedTask = new Task(taskId, TaskType.laboratory.getCode(), titleComponent.getValue(),
+                    taskDescriptionTextArea.getValue(), deaLinePicker.getValue(), taskResources);
+            tasksList.add(updatedTask);
+        });
+        return tasksList;
+    }
+
     private void uploadFilesData() throws IOException {
         for(UploadingCourseFilesContext.UploadingFileResource resource : uploadingContext.getAllFilesToSave()) {
             studyClient.uploadFileData(resource.getFileData().readAllBytes(), resource.getFileName());
         }
+    }
+
+    private Component getChildComponentById(@NotNull Component parent, @NotNull String targetId) {
+        return parent.getChildren().filter(c -> targetId.equals(c.getId().get())).findAny().get();
     }
 }
 

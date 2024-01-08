@@ -152,6 +152,11 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
             VerticalLayout taskLayout = new VerticalLayout();
             taskLayout.add(new Label(task.getTaskTypeEnum().getTitle() + ": " + task.getTitle()));
 
+            if (task.getDeadLine() != null) {
+                Label deadline = new Label("Срок сдачи: " + task.getDeadLine().toString());
+                taskLayout.add(deadline);
+            }
+
             if(task.getDescription() != null) {
                 TextArea taskDescription = new TextArea();
                 taskDescription.setValue(task.getDescription());
@@ -162,12 +167,12 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
                 taskLayout.add(taskDescription);
             }
 
-            if (task.getDeadLine() != null) {
-                Label deadline = new Label("Срок сдачи: " + task.getDeadLine().toString());
-                taskLayout.add(deadline);
-            }
-
             appendResources(taskLayout, task.getResources());
+
+            taskLayout.getStyle().set("width", "70%")
+                    .set("border", "1px solid cadetblue")
+                    .set("border-radius", "var(--lumo-border-radius-s)");
+
             layout.add(taskLayout);
         }
     }
