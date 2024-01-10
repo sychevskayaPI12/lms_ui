@@ -67,18 +67,21 @@ public class RegistrationDetailsView extends VerticalLayout {
         specialtySelect.setLabel("Направление подготовки");
         specialtySelect.setRequiredIndicatorVisible(true);
         fillSpecialties();
+        specialtySelect.addValueChangeListener(e -> selectValueChangeListenerForGroup());
 
         stageSelect = new Select<>();
         stageSelect.setLabel("Степень подготовки");
         stageSelect.setRequiredIndicatorVisible(true);
         fillStages();
         stageSelect.addValueChangeListener(e -> selectValueChangeListenerForCourseNum());
+        stageSelect.addValueChangeListener(e -> selectValueChangeListenerForGroup());
 
         studyFormSelect = new Select<>();
         studyFormSelect.setLabel("Форма обучения");
         studyFormSelect.setRequiredIndicatorVisible(true);
         fillStudyForms();
         studyFormSelect.addValueChangeListener(e -> selectValueChangeListenerForCourseNum());
+        studyFormSelect.addValueChangeListener(e -> selectValueChangeListenerForGroup());
 
         courseNumberSelect = new Select<>();
         courseNumberSelect.setLabel("Курс");
@@ -144,19 +147,26 @@ public class RegistrationDetailsView extends VerticalLayout {
             );
         } else {
             courseNumberSelect.setEnabled(false);
+            courseNumberSelect.clear();
         }
     }
 
     private void selectValueChangeListenerForGroup() {
 
-        String specialty = specialtySelect.getValue();
-        String stage = stageSelect.getValue().getCode();
-        String studyForm = studyFormSelect.getValue().getCode();
-        Integer currentCourseNum = courseNumberSelect.getValue();
-        List<String> groups = studyServiceClient.getGroups(specialty, stage, studyForm, currentCourseNum);
+        if(specialtySelect.getValue() != null && studyFormSelect.getValue() != null &&
+                studyFormSelect.getValue() != null && courseNumberSelect.getValue() != null) {
 
-        groupSelect.setItems(groups);
-        groupSelect.setEnabled(true);
+            String specialty = specialtySelect.getValue();
+            String stage = stageSelect.getValue().getCode();
+            String studyForm = studyFormSelect.getValue().getCode();
+            Integer currentCourseNum = courseNumberSelect.getValue();
+
+            List<String> groups = studyServiceClient.getGroups(specialty, stage, studyForm, currentCourseNum);
+            groupSelect.setItems(groups);
+            groupSelect.setEnabled(true);
+        } else {
+            groupSelect.clear();
+        }
     }
 
     private List<Integer> defineAvailableCourses(String stageCode, String studyFormCode) {

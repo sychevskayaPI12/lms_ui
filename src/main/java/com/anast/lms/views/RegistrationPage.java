@@ -4,6 +4,8 @@ import com.anast.lms.model.*;
 import com.anast.lms.service.external.ProfileServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.external.UserServiceClient;
+import com.vaadin.flow.component.AbstractField;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
@@ -17,6 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Route("registration")
 @PageTitle("Registration | LMS")
@@ -69,6 +72,13 @@ public class RegistrationPage extends VerticalLayout {
     }
 
     private void saveButtonEventListener() {
+
+        if(!isRequiredFieldsFilled(registrationView)) {
+            Notification notification = new Notification("Заполните обязательные поля");
+            notification.setOpened(true);
+            return;
+        }
+
         PasswordField passwordField = registrationView.getPasswordField();
         PasswordField confirmPasswordField = registrationView.getConfirmPasswordField();
 
@@ -85,6 +95,11 @@ public class RegistrationPage extends VerticalLayout {
 
         String passwordEncoded = passwordEncoder.encode(passwordField.getValue());
         List<String> roles = defineUserRoles();
+        if(roles.isEmpty()) {
+            Notification notification = new Notification("Пожалуйста, укажите свои роли");
+            notification.setOpened(true);
+            return;
+        }
 
         UserAuthInfo userAuthInfo = new UserAuthInfo(
                 registrationView.getLoginField().getValue(),
@@ -116,7 +131,19 @@ public class RegistrationPage extends VerticalLayout {
         }
 
         //todo желательно конечно поместить юзера в контекст и перейти на стартовую
+
+        Notification notification = new Notification(String.format("Регистрация пользователя с логином %s прошла успешно! Пожалуйста, авторизируйтесь."
+                , userDetail.getLogin()));
+        notification.setOpened(true);
+
         getUI().ifPresent(ui -> ui.navigate(LoginView.class));
+    }
+
+    private boolean isRequiredFieldsFilled(RegistrationView registrationView) {
+
+        List<Component> fields = registrationView.getChildren()
+                .filter(c -> ((AbstractField) c).isEmpty()).collect(Collectors.toList());
+        return fields.isEmpty();
     }
 
     private List<String> defineUserRoles() {
@@ -130,7 +157,7 @@ public class RegistrationPage extends VerticalLayout {
         return roles;
     }
 
-    private UserProfileInfo fillUserProfileInfo() {
+    private UserProfileInfo fillUserProfileInfo() throws Exception {
         UserProfileInfo profileInfo = new UserProfileInfo();
         profileInfo.setLogin(registrationView.getLoginField().getValue());
 
@@ -144,6 +171,10 @@ public class RegistrationPage extends VerticalLayout {
         }
 
         if(isStudentFlag) {
+
+            if(registrationDetailsView.getGroupSelect().getValue() == null) {
+                throw new Exception("Не указана группа студента");
+            }
             StudentProfileInfo studentProfileInfo = new StudentProfileInfo();
             studentProfileInfo.setGroupCode(registrationDetailsView.getGroupSelect().getValue());
             profileInfo.setStudentInfo(studentProfileInfo);
