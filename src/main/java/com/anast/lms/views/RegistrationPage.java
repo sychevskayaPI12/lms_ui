@@ -1,8 +1,8 @@
 package com.anast.lms.views;
 
-import com.anast.lms.model.UserAuthInfo;
-import com.anast.lms.model.UserDetail;
-import com.anast.lms.model.UserRegisterRequest;
+import com.anast.lms.model.*;
+import com.anast.lms.service.external.ProfileServiceClient;
+import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.external.UserServiceClient;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -16,19 +16,24 @@ import com.vaadin.flow.router.Route;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Route("registration")
 @PageTitle("Registration | LMS")
 public class RegistrationPage extends VerticalLayout {
 
     private final UserServiceClient userServiceClient;
+    private final StudyServiceClient studyServiceClient;
+    private final ProfileServiceClient profileServiceClient;
     private final BCryptPasswordEncoder passwordEncoder;
 
     private RegistrationView registrationView;
     private RegistrationDetailsView registrationDetailsView;
 
-    public RegistrationPage(UserServiceClient userServiceClient, BCryptPasswordEncoder passwordEncoder) {
+    public RegistrationPage(UserServiceClient userServiceClient, StudyServiceClient studyServiceClient, ProfileServiceClient profileServiceClient, BCryptPasswordEncoder passwordEncoder) {
         this.userServiceClient = userServiceClient;
+        this.studyServiceClient = studyServiceClient;
+        this.profileServiceClient = profileServiceClient;
         this.passwordEncoder = passwordEncoder;
 
         //setSpacing(false);
@@ -41,7 +46,7 @@ public class RegistrationPage extends VerticalLayout {
         header.setWidth("70%");
 
         registrationView = new RegistrationView();
-        registrationDetailsView = new RegistrationDetailsView();
+        registrationDetailsView = new RegistrationDetailsView(studyServiceClient);
 
         HorizontalLayout contentHorizontalLayout = new HorizontalLayout(registrationView, registrationDetailsView);
         contentHorizontalLayout.setWidth("70%");
@@ -78,12 +83,12 @@ public class RegistrationPage extends VerticalLayout {
                 registrationView.getNameField().getValue(),
                 registrationView.getMailField().getValue());
 
-        //todo в какой момент заполняем роли?
         String passwordEncoded = passwordEncoder.encode(passwordField.getValue());
+        List<String> roles = defineUserRoles();
 
         UserAuthInfo userAuthInfo = new UserAuthInfo(
                 registrationView.getLoginField().getValue(),
-                passwordEncoded, new ArrayList<>());
+                passwordEncoded, roles);
 
         UserRegisterRequest registerRequest = new UserRegisterRequest(userAuthInfo, userDetail);
 
@@ -97,7 +102,54 @@ public class RegistrationPage extends VerticalLayout {
             return;
         }
 
+        try {
+            UserProfileInfo profileInfo = fillUserProfileInfo();
+            profileServiceClient.saveProfileInfo(profileInfo);
+
+        } catch (Exception e) {
+            Notification notification = new Notification("Ошибка регистрации: " + e.getMessage());
+            notification.setOpened(true);
+
+            //rollback user
+            userServiceClient.deleteUser(userDetail.getLogin());
+            return;
+        }
+
         //todo желательно конечно поместить юзера в контекст и перейти на стартовую
         getUI().ifPresent(ui -> ui.navigate(LoginView.class));
+    }
+
+    private List<String> defineUserRoles() {
+        List<String> roles = new ArrayList<>();
+        if(registrationDetailsView.isTeacher()) {
+            roles.add("TEACHER");
+        }
+        if(registrationDetailsView.isStudent()) {
+            roles.add("STUDENT");
+        }
+        return roles;
+    }
+
+    private UserProfileInfo fillUserProfileInfo() {
+        UserProfileInfo profileInfo = new UserProfileInfo();
+        profileInfo.setLogin(registrationView.getLoginField().getValue());
+
+        boolean isTeacherFlag = registrationDetailsView.isTeacher();
+        boolean isStudentFlag = registrationDetailsView.isStudent();
+
+        if(isTeacherFlag) {
+            //todo
+            TeacherProfileInfo teacherProfileInfo = new TeacherProfileInfo();
+            profileInfo.setTeacherInfo(teacherProfileInfo);
+        }
+
+        if(isStudentFlag) {
+            StudentProfileInfo studentProfileInfo = new StudentProfileInfo();
+            studentProfileInfo.setGroupCode(registrationDetailsView.getGroupSelect().getValue());
+            profileInfo.setStudentInfo(studentProfileInfo);
+        }
+
+        return profileInfo;
+
     }
 }
