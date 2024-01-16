@@ -1,9 +1,9 @@
 package com.anast.lms.service;
 
-import com.anast.lms.model.Course;
 import com.anast.lms.model.CourseSearchType;
 import com.anast.lms.model.SchedulerItem;
-import com.anast.lms.model.UserProfileInfo;
+import com.anast.lms.model.course.Course;
+import com.anast.lms.model.profile.UserProfileInfo;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;

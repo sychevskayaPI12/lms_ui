@@ -1,16 +1,14 @@
 package com.anast.lms.views;
 
 import com.anast.lms.model.SchedulerItem;
-import com.anast.lms.model.UserProfileInfo;
 import com.anast.lms.model.WeekScheduler;
+import com.anast.lms.model.profile.UserProfile;
 import com.anast.lms.service.StudyUtils;
-import com.anast.lms.service.external.ProfileServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -27,13 +25,11 @@ import java.util.List;
 @CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class MainView extends VerticalLayout {
 
-    private final ProfileServiceClient profileClient;
     private final SecurityService securityService;
     private final StudyServiceClient studyClient;
 
 
-    public MainView(ProfileServiceClient profileClient, SecurityService securityService, StudyServiceClient studyClient) {
-        this.profileClient = profileClient;
+    public MainView(SecurityService securityService, StudyServiceClient studyClient) {
         this.securityService = securityService;
         this.studyClient = studyClient;
         build();
@@ -42,14 +38,14 @@ public class MainView extends VerticalLayout {
     private void build() {
 
         String login = securityService.getAuthenticatedUser().getUsername();
-        UserProfileInfo profileInfo = profileClient.getUserProfileInfo(login);
+        UserProfile profileInfo = studyClient.getUserProfileInfo(login);
 
         setPadding(true);
         setSpacing(true);
         Label header = new Label();
         header.setWidthFull();
         header.setHeight("3%");
-        header.setText(String.format("Добро пожаловать, %s!", profileInfo.getFullName()));
+        header.setText(String.format("Добро пожаловать, %s!", profileInfo.getUserProfileInfo().getFullName()));
         header.getStyle().set("font-size", "var(--lumo-font-size-l)");
         add(header);
 
@@ -58,7 +54,7 @@ public class MainView extends VerticalLayout {
 
     }
 
-    private void addInfoLayout(UserProfileInfo profileInfo) {
+    private void addInfoLayout(UserProfile profileInfo) {
         HorizontalLayout infoLayout = new HorizontalLayout();
         if(profileInfo.getTeacherInfo() == null && profileInfo.getStudentInfo() == null) {
             //todo
@@ -96,7 +92,7 @@ public class MainView extends VerticalLayout {
         add(infoLayout);
     }
 
-    private void addCurrentScheduleLayout(UserProfileInfo profileInfo) {
+    private void addCurrentScheduleLayout(UserProfile profileInfo) {
 
         Short dayOfWeek = (short) LocalDate.now().getDayOfWeek().getValue();
         if(profileInfo.getTeacherInfo() != null) {
@@ -104,7 +100,7 @@ public class MainView extends VerticalLayout {
             VerticalLayout teacherDailyLayout = new VerticalLayout();
             teacherDailyLayout.add(new Label("Занятия преподавателя на сегодня:"));
 
-            WeekScheduler scheduler = studyClient.getTeacherScheduler(profileInfo.getLogin(), true);
+            WeekScheduler scheduler = studyClient.getTeacherScheduler(profileInfo.getUserProfileInfo().getLogin(), true);
             List<SchedulerItem> currentClasses = scheduler.getWeekClasses().get(dayOfWeek);
             if(currentClasses == null || currentClasses.isEmpty()) {
                 teacherDailyLayout.add(new Label("Занятий нет"));

@@ -1,8 +1,8 @@
 package com.anast.lms.views;
 
-import com.anast.lms.model.Course;
 import com.anast.lms.model.CourseSearchType;
-import com.anast.lms.model.UserProfileInfo;
+import com.anast.lms.model.course.Course;
+import com.anast.lms.model.profile.UserProfile;
 import com.anast.lms.service.StudyUtils;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.vaadin.flow.component.button.Button;
@@ -17,7 +17,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteParameters;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,16 +30,16 @@ import java.util.stream.Collectors;
 public class TeachersCoursesView extends VerticalLayout {
 
     private final StudyServiceClient studyClient;
-    private final UserProfileInfo profileInfo;
+    private final UserProfile userProfile;
 
     private VerticalLayout coursesListLayout;
     private Select<String> select;
     private Select<String> specialtySelect;
 
 
-    public TeachersCoursesView(StudyServiceClient studyClient, UserProfileInfo profileInfo) {
+    public TeachersCoursesView(StudyServiceClient studyClient, UserProfile userProfile) {
         this.studyClient = studyClient;
-        this.profileInfo = profileInfo;
+        this.userProfile = userProfile;
 
         setWidthFull();
         setHeightFull();
@@ -49,7 +48,7 @@ public class TeachersCoursesView extends VerticalLayout {
 
     private void build() {
 
-        if(profileInfo.getTeacherInfo() == null) {
+        if(userProfile.getTeacherInfo() == null) {
             return;
         }
 
@@ -116,7 +115,7 @@ public class TeachersCoursesView extends VerticalLayout {
 
         coursesListLayout.removeAll();
         List<Course> courseList = studyClient.getTeacherCourses(
-                profileInfo.getLogin(), specialty, form, stage, searchMode);
+                userProfile.getUserProfileInfo().getLogin(), specialty, form, stage, searchMode);
 
         courseList.forEach(course -> {
             coursesListLayout.add(createCourseDisplayItem(course));

@@ -1,8 +1,9 @@
 package com.anast.lms.views;
-
-import com.anast.lms.model.Course;
+;
 import com.anast.lms.model.CourseSearchType;
-import com.anast.lms.model.UserProfileInfo;
+import com.anast.lms.model.course.Course;
+import com.anast.lms.model.profile.UserProfile;
+import com.anast.lms.model.profile.UserProfileInfo;
 import com.anast.lms.service.StudyUtils;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -25,13 +26,13 @@ import java.util.stream.Collectors;
 public class StudentCoursesView extends VerticalLayout {
 
     private final StudyServiceClient studyClient;
-    private final UserProfileInfo profileInfo;
+    private final UserProfile profileInfo;
 
     private VerticalLayout coursesListLayout;
     private Select<String> select;
 
 
-    public StudentCoursesView(StudyServiceClient studyClient, UserProfileInfo profileInfo) {
+    public StudentCoursesView(StudyServiceClient studyClient, UserProfile profileInfo) {
         this.studyClient = studyClient;
         this.profileInfo = profileInfo;
 

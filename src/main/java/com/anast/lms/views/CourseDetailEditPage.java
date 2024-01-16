@@ -1,8 +1,9 @@
 package com.anast.lms.views;
 
 import com.anast.lms.model.*;
+import com.anast.lms.model.course.*;
 import com.anast.lms.service.StudyUtils;
-import com.anast.lms.service.external.StudyServiceClient;
+import com.anast.lms.service.external.CourseServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -28,7 +29,6 @@ import com.vaadin.flow.server.StreamResource;
 import javax.validation.constraints.NotNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,8 +40,8 @@ import java.util.stream.Collectors;
 @CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class CourseDetailEditPage extends VerticalLayout implements HasUrlParameter<Integer>, BeforeEnterObserver {
 
-    private final StudyServiceClient studyClient;
     private final SecurityService securityService;
+    private final CourseServiceClient courseClient;
 
     private Integer currentCourseId;
     private VerticalLayout modulesLayout;
@@ -61,9 +61,9 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
 
 
-    public CourseDetailEditPage(StudyServiceClient studyClient, SecurityService securityService) {
-        this.studyClient = studyClient;
+    public CourseDetailEditPage(SecurityService securityService, CourseServiceClient courseClient) {
         this.securityService = securityService;
+        this.courseClient = courseClient;
         this.modulesLayout = new VerticalLayout();
     }
 
@@ -82,7 +82,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
         buildPanel();
 
-        CourseFullInfoResponse courseDetailPage = studyClient.getCourseFullInfo(currentCourseId);
+        CourseFullInfoResponse courseDetailPage = courseClient.getCourseFullInfo(currentCourseId);
         Course course = courseDetailPage.getCourse();
         DisciplineInstance discipline = course.getDiscipline();
 
@@ -183,7 +183,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
         done.addClickListener(e -> {
            request.setModules(getUpdatedModulesData());
            try{
-               studyClient.updateCourseModules(currentCourseId, request);
+               courseClient.updateCourseModules(currentCourseId, request);
                try {
                    uploadFilesData();
                } catch (Exception ex) {
@@ -284,7 +284,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
                 if(isNew) {
                     return new ByteArrayInputStream(new byte[0]);
                 } else {
-                    byte[] fileDataArray = studyClient.getFileData(resource).getBody();
+                    byte[] fileDataArray = courseClient.getFileData(resource).getBody();
                     return new ByteArrayInputStream(fileDataArray);
                 }
             });
@@ -449,7 +449,7 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
 
     private void uploadFilesData() throws IOException {
         for(UploadingCourseFilesContext.UploadingFileResource resource : uploadingContext.getAllFilesToSave()) {
-            studyClient.uploadFileData(resource.getFileData().readAllBytes(), resource.getFileName());
+            courseClient.uploadFileData(resource.getFileData().readAllBytes(), resource.getFileName());
         }
     }
 

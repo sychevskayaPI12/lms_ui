@@ -1,7 +1,6 @@
 package com.anast.lms.views;
 
-import com.anast.lms.model.UserProfileInfo;
-import com.anast.lms.service.external.ProfileServiceClient;
+import com.anast.lms.model.profile.*;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -22,21 +21,14 @@ import java.util.stream.Collectors;
 @CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class CoursesPage extends VerticalLayout {
 
-    private final ProfileServiceClient profileClient;
-    private final SecurityService securityService;
-    private final StudyServiceClient studyClient;
-
     private StudentCoursesView studentCoursesView;
     private TeachersCoursesView teachersCoursesView;
 
 
-    public CoursesPage(ProfileServiceClient profileClient, SecurityService securityService, StudyServiceClient studyClient) {
-        this.profileClient = profileClient;
-        this.securityService = securityService;
-        this.studyClient = studyClient;
+    public CoursesPage(SecurityService securityService, StudyServiceClient studyClient) {
 
         UserDetails userDetails = securityService.getAuthenticatedUser();
-        UserProfileInfo profileInfo = profileClient.getUserProfileInfo(userDetails.getUsername());
+        UserProfile profileInfo = studyClient.getUserProfileInfo(userDetails.getUsername());
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).collect(Collectors.toList());

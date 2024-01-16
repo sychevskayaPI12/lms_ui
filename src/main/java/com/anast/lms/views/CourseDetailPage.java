@@ -1,6 +1,8 @@
 package com.anast.lms.views;
 
-import com.anast.lms.model.*;
+import com.anast.lms.model.DisciplineInstance;
+import com.anast.lms.model.course.*;
+import com.anast.lms.service.external.CourseServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.button.Button;
@@ -11,7 +13,6 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
@@ -28,14 +29,15 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
 
     private final StudyServiceClient studyClient;
     private final SecurityService securityService;
-
+    private final CourseServiceClient courseClient;
 
     private Integer currentCourseId;
 
-    public CourseDetailPage(StudyServiceClient studyClient, SecurityService securityService) {
+    public CourseDetailPage(StudyServiceClient studyClient, SecurityService securityService, CourseServiceClient courseClient) {
         this.studyClient = studyClient;
 
         this.securityService = securityService;
+        this.courseClient = courseClient;
     }
 
     @Override
@@ -51,7 +53,7 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
 
     private void build() {
 
-        CourseFullInfoResponse courseDetailPage = studyClient.getCourseFullInfo(currentCourseId);
+        CourseFullInfoResponse courseDetailPage = courseClient.getCourseFullInfo(currentCourseId);
         Course course = courseDetailPage.getCourse();
         DisciplineInstance discipline = course.getDiscipline();
 
@@ -136,7 +138,7 @@ public class CourseDetailPage extends VerticalLayout implements HasUrlParameter<
         for (ModuleResource resource : resources) {
 
             StreamResource streamResource = new StreamResource(resource.getDisplayFileName(), (InputStreamFactory) () -> {
-                byte[] fileDataArray = studyClient.getFileData(resource).getBody();
+                byte[] fileDataArray = courseClient.getFileData(resource).getBody();
                 return new ByteArrayInputStream(fileDataArray);
             });
 

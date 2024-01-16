@@ -2,10 +2,9 @@ package com.anast.lms.views;
 
 
 import com.anast.lms.model.SchedulerItem;
-import com.anast.lms.model.UserProfileInfo;
 import com.anast.lms.model.WeekScheduler;
+import com.anast.lms.model.profile.UserProfile;
 import com.anast.lms.service.StudyUtils;
-import com.anast.lms.service.external.ProfileServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -31,14 +30,12 @@ import java.util.stream.Collectors;
 @CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class SchedulePage extends VerticalLayout {
 
-    private final ProfileServiceClient profileClient;
     private final SecurityService securityService;
     private final StudyServiceClient studyClient;
 
     private final Locale RuLocale;
 
-    public SchedulePage(ProfileServiceClient profileClient, SecurityService securityService, StudyServiceClient studyClient) {
-        this.profileClient = profileClient;
+    public SchedulePage(SecurityService securityService, StudyServiceClient studyClient) {
         this.securityService = securityService;
         this.studyClient = studyClient;
         this.RuLocale = new Locale("ru", "RU");
@@ -49,7 +46,7 @@ public class SchedulePage extends VerticalLayout {
     private void build() {
 
         UserDetails userDetails = securityService.getAuthenticatedUser();
-        UserProfileInfo profileInfo = profileClient.getUserProfileInfo(userDetails.getUsername());
+        UserProfile profileInfo = studyClient.getUserProfileInfo(userDetails.getUsername());
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
@@ -82,9 +79,9 @@ public class SchedulePage extends VerticalLayout {
         setSpacing(false);
     }
 
-    private VerticalLayout buildStudentScheduleLayout(UserProfileInfo profileInfo) {
+    private VerticalLayout buildStudentScheduleLayout(UserProfile userProfile) {
         VerticalLayout layout = new VerticalLayout();
-        WeekScheduler scheduler = studyClient.getStudentScheduler(profileInfo.getStudentInfo().getGroupCode(), false);
+        WeekScheduler scheduler = studyClient.getStudentScheduler(userProfile.getStudentInfo().getGroupCode(), false);
 
         for(short dayOfWeek = 1; dayOfWeek< 6; dayOfWeek++) {
             VerticalLayout dayLayout = getDailyLayoutStyled(dayOfWeek);
@@ -104,9 +101,9 @@ public class SchedulePage extends VerticalLayout {
         return layout;
     }
 
-    private VerticalLayout buildTeacherScheduleLayout(UserProfileInfo profileInfo) {
+    private VerticalLayout buildTeacherScheduleLayout(UserProfile userProfile) {
         VerticalLayout layout = new VerticalLayout();
-        WeekScheduler scheduler = studyClient.getTeacherScheduler(profileInfo.getLogin(), false);
+        WeekScheduler scheduler = studyClient.getTeacherScheduler(userProfile.getUserProfileInfo().getLogin(), false);
 
         for(short dayOfWeek = 1; dayOfWeek< 6; dayOfWeek++) {
             VerticalLayout dayLayout = getDailyLayoutStyled(dayOfWeek);

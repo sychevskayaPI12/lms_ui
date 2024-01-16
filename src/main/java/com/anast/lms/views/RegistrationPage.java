@@ -1,7 +1,10 @@
 package com.anast.lms.views;
 
 import com.anast.lms.model.*;
-import com.anast.lms.service.external.ProfileServiceClient;
+import com.anast.lms.model.profile.StudentProfileInfo;
+import com.anast.lms.model.profile.TeacherProfileInfo;
+import com.anast.lms.model.profile.UserProfile;
+import com.anast.lms.model.profile.UserProfileInfo;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.external.UserServiceClient;
 import com.vaadin.flow.component.AbstractField;
@@ -27,16 +30,15 @@ public class RegistrationPage extends VerticalLayout {
 
     private final UserServiceClient userServiceClient;
     private final StudyServiceClient studyServiceClient;
-    private final ProfileServiceClient profileServiceClient;
     private final BCryptPasswordEncoder passwordEncoder;
 
     private RegistrationView registrationView;
     private RegistrationDetailsView registrationDetailsView;
 
-    public RegistrationPage(UserServiceClient userServiceClient, StudyServiceClient studyServiceClient, ProfileServiceClient profileServiceClient, BCryptPasswordEncoder passwordEncoder) {
+    public RegistrationPage(UserServiceClient userServiceClient, StudyServiceClient studyServiceClient,
+                            BCryptPasswordEncoder passwordEncoder) {
         this.userServiceClient = userServiceClient;
         this.studyServiceClient = studyServiceClient;
-        this.profileServiceClient = profileServiceClient;
         this.passwordEncoder = passwordEncoder;
 
         //setSpacing(false);
@@ -118,8 +120,8 @@ public class RegistrationPage extends VerticalLayout {
         }
 
         try {
-            UserProfileInfo profileInfo = fillUserProfileInfo();
-            profileServiceClient.saveProfileInfo(profileInfo);
+            UserProfile profileInfo = fillUserProfileInfo();
+            studyServiceClient.saveProfileInfo(profileInfo);
 
         } catch (Exception e) {
             Notification notification = new Notification("Ошибка регистрации: " + e.getMessage());
@@ -157,9 +159,12 @@ public class RegistrationPage extends VerticalLayout {
         return roles;
     }
 
-    private UserProfileInfo fillUserProfileInfo() throws Exception {
-        UserProfileInfo profileInfo = new UserProfileInfo();
-        profileInfo.setLogin(registrationView.getLoginField().getValue());
+    private UserProfile fillUserProfileInfo() throws Exception {
+
+        UserProfile userProfile = new UserProfile();
+        UserProfileInfo userProfileInfo = new UserProfileInfo();
+        userProfileInfo.setLogin(registrationView.getLoginField().getValue());
+        userProfile.setUserProfileInfo(userProfileInfo);
 
         boolean isTeacherFlag = registrationDetailsView.isTeacher();
         boolean isStudentFlag = registrationDetailsView.isStudent();
@@ -167,7 +172,7 @@ public class RegistrationPage extends VerticalLayout {
         if(isTeacherFlag) {
             //todo
             TeacherProfileInfo teacherProfileInfo = new TeacherProfileInfo();
-            profileInfo.setTeacherInfo(teacherProfileInfo);
+            userProfile.setTeacherInfo(teacherProfileInfo);
         }
 
         if(isStudentFlag) {
@@ -177,10 +182,10 @@ public class RegistrationPage extends VerticalLayout {
             }
             StudentProfileInfo studentProfileInfo = new StudentProfileInfo();
             studentProfileInfo.setGroupCode(registrationDetailsView.getGroupSelect().getValue());
-            profileInfo.setStudentInfo(studentProfileInfo);
+            userProfile.setStudentInfo(studentProfileInfo);
         }
 
-        return profileInfo;
+        return userProfile;
 
     }
 }
