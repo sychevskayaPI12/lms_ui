@@ -5,6 +5,7 @@ import com.anast.lms.model.profile.StudentProfileInfo;
 import com.anast.lms.model.profile.TeacherProfileInfo;
 import com.anast.lms.model.profile.UserProfile;
 import com.anast.lms.model.profile.UserProfileInfo;
+import com.anast.lms.service.external.ModerationServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.external.UserServiceClient;
 import com.vaadin.flow.component.AbstractField;
@@ -31,17 +32,18 @@ public class RegistrationPage extends VerticalLayout {
     private final UserServiceClient userServiceClient;
     private final StudyServiceClient studyServiceClient;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final ModerationServiceClient moderationClient;
 
     private RegistrationView registrationView;
     private RegistrationDetailsView registrationDetailsView;
 
     public RegistrationPage(UserServiceClient userServiceClient, StudyServiceClient studyServiceClient,
-                            BCryptPasswordEncoder passwordEncoder) {
+                            BCryptPasswordEncoder passwordEncoder, ModerationServiceClient moderationClient) {
         this.userServiceClient = userServiceClient;
         this.studyServiceClient = studyServiceClient;
         this.passwordEncoder = passwordEncoder;
+        this.moderationClient = moderationClient;
 
-        //setSpacing(false);
         build();
     }
 
@@ -123,19 +125,21 @@ public class RegistrationPage extends VerticalLayout {
             UserProfile profileInfo = fillUserProfileInfo();
             studyServiceClient.saveProfileInfo(profileInfo);
 
+            //регистрация заявки
+            moderationClient.createRegistrationRequest(userAuthInfo.getLogin());
+
         } catch (Exception e) {
             Notification notification = new Notification("Ошибка регистрации: " + e.getMessage());
             notification.setOpened(true);
 
             //rollback user
+            studyServiceClient.deleteUserProfile(userDetail.getLogin());
             userServiceClient.deleteUser(userDetail.getLogin());
             return;
         }
 
-        //todo желательно конечно поместить юзера в контекст и перейти на стартовую
-
-        Notification notification = new Notification(String.format("Регистрация пользователя с логином %s прошла успешно! Пожалуйста, авторизируйтесь."
-                , userDetail.getLogin()));
+        //todo если модератор, сразу регать/автоматически аппрувить заявку
+        Notification notification = new Notification("Заявка на регистрацию успешно создана!");
         notification.setOpened(true);
 
         getUI().ifPresent(ui -> ui.navigate(LoginView.class));

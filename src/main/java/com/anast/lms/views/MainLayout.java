@@ -61,7 +61,10 @@ public class MainLayout extends AppLayout {
 
         Tab scheduleTab = new Tab(new RouterLink("Расписание", SchedulePage.class));
 
-        tabs.add(personalTab, personalCoursesTab, scheduleTab);
+        //todo проверять роль модератора
+        Tab requestsTab = new Tab(new RouterLink("Заявки на регистрацию", RegistrationRequestsPage.class));
+
+        tabs.add(personalTab, personalCoursesTab, scheduleTab, requestsTab);
 
         addToDrawer(tabs);
     }
