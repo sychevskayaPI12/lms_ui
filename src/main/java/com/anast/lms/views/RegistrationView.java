@@ -3,13 +3,14 @@ package com.anast.lms.views;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 
 public class RegistrationView extends VerticalLayout {
 
     private final TextField loginField;
-    private final TextField mailField;
+    private final EmailField mailField;
     private final TextField nameField;
     private final PasswordField passwordField;
     private final PasswordField confirmPasswordField;
@@ -17,14 +18,13 @@ public class RegistrationView extends VerticalLayout {
 
     public RegistrationView() {
 
-
         loginField = new TextField("Логин");
         loginField.setRequired(true);
         loginField.setWidth("55%");
 
-        //todo желательно валидировать формат и саму почту
-        mailField = new TextField("Эл.почта");
-        mailField.setRequired(true);
+        mailField = new EmailField("Адрес электроной почты");
+        mailField.setErrorMessage("Некорректный адрес");
+        mailField.setClearButtonVisible(true);
         mailField.setWidthFull();
 
         nameField = new TextField("ФИО");
@@ -50,7 +50,7 @@ public class RegistrationView extends VerticalLayout {
         return loginField;
     }
 
-    public TextField getMailField() {
+    public EmailField getMailField() {
         return mailField;
     }
 
