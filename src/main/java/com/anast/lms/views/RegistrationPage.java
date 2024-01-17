@@ -170,8 +170,9 @@ public class RegistrationPage extends VerticalLayout {
         boolean isStudentFlag = registrationDetailsView.isStudent();
 
         if(isTeacherFlag) {
-            //todo
-            TeacherProfileInfo teacherProfileInfo = new TeacherProfileInfo();
+            TeacherProfileInfo teacherProfileInfo = new TeacherProfileInfo(
+                    registrationDetailsView.getTeacherLayout().getTeacherFacultyPositions()
+            );
             userProfile.setTeacherInfo(teacherProfileInfo);
         }
 

@@ -17,8 +17,9 @@ public class RegistrationDetailsView extends VerticalLayout {
 
     private Checkbox isStudentCheckBox;
     private Checkbox isTeacherCheckBox;
-    private VerticalLayout teacherLayout;
+    private RegistrationTeacherDetailsView teacherLayout;
     private VerticalLayout studentLayout;
+
 
     private Select<String> specialtySelect;
     private Select<Stage> stageSelect;
@@ -30,6 +31,7 @@ public class RegistrationDetailsView extends VerticalLayout {
     public RegistrationDetailsView(StudyServiceClient studyServiceClient) {
 
         this.studyServiceClient = studyServiceClient;
+        setSpacing(false);
 
         isTeacherCheckBox = new Checkbox("Я преподаватель");
         isTeacherCheckBox.addValueChangeListener(e -> teacherLayout.setVisible(isTeacherCheckBox.getValue()));
@@ -46,9 +48,8 @@ public class RegistrationDetailsView extends VerticalLayout {
     }
 
     private void buildTeacherLayout() {
-        teacherLayout = new VerticalLayout();
+        teacherLayout = new RegistrationTeacherDetailsView(studyServiceClient);
         teacherLayout.setVisible(false);
-        //todo выбор должности. Может их несколько должно быть?
     }
 
     public boolean isStudent() {
@@ -111,7 +112,7 @@ public class RegistrationDetailsView extends VerticalLayout {
         return isTeacherCheckBox;
     }
 
-    public VerticalLayout getTeacherLayout() {
+    public RegistrationTeacherDetailsView getTeacherLayout() {
         return teacherLayout;
     }
 
