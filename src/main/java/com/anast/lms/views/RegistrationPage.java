@@ -8,6 +8,7 @@ import com.anast.lms.model.profile.UserProfileInfo;
 import com.anast.lms.service.external.ModerationServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.external.UserServiceClient;
+import com.anast.lms.service.security.SecurityService;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -19,6 +20,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.ArrayList;
@@ -33,16 +36,18 @@ public class RegistrationPage extends VerticalLayout {
     private final StudyServiceClient studyServiceClient;
     private final BCryptPasswordEncoder passwordEncoder;
     private final ModerationServiceClient moderationClient;
+    private final SecurityService securityService;
 
     private RegistrationView registrationView;
     private RegistrationDetailsView registrationDetailsView;
 
     public RegistrationPage(UserServiceClient userServiceClient, StudyServiceClient studyServiceClient,
-                            BCryptPasswordEncoder passwordEncoder, ModerationServiceClient moderationClient) {
+                            BCryptPasswordEncoder passwordEncoder, ModerationServiceClient moderationClient, SecurityService securityService) {
         this.userServiceClient = userServiceClient;
         this.studyServiceClient = studyServiceClient;
         this.passwordEncoder = passwordEncoder;
         this.moderationClient = moderationClient;
+        this.securityService = securityService;
 
         build();
     }
@@ -138,11 +143,26 @@ public class RegistrationPage extends VerticalLayout {
             return;
         }
 
-        //todo если модератор, сразу регать/автоматически аппрувить заявку
-        Notification notification = new Notification("Заявка на регистрацию успешно создана!");
-        notification.setOpened(true);
+        if(isModeratorAuthorised()) {
+            Notification notification = new Notification("Регистрация прошла успешно");
+            notification.setOpened(true);
+            getUI().ifPresent(ui -> ui.navigate(MainView.class));
 
-        getUI().ifPresent(ui -> ui.navigate(LoginView.class));
+        } else {
+            Notification notification = new Notification("Заявка на регистрацию успешно создана!");
+            notification.setOpened(true);
+            getUI().ifPresent(ui -> ui.navigate(LoginView.class));
+        }
+    }
+
+    private boolean isModeratorAuthorised() {
+        UserDetails userDetails = securityService.getAuthenticatedUser();
+        if(userDetails == null) {
+            return false;
+        }
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+        return roles.contains("ROLE_MODERATOR");
     }
 
     private boolean isRequiredFieldsFilled(RegistrationView registrationView) {

@@ -11,9 +11,14 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.RouterLink;
+import org.springframework.security.core.GrantedAuthority;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainLayout extends AppLayout {
     private final SecurityService securityService;
+    private Tabs tabs;
 
     public MainLayout(SecurityService securityService) {
         this.securityService = securityService;
@@ -51,21 +56,28 @@ public class MainLayout extends AppLayout {
 
     private void createDrawer() {
 
-        //todo pretty tabs
-        Tabs tabs = new Tabs();
+        List<String> roles = securityService.getAuthenticatedUser().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+
+        tabs = new Tabs();
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
+        addTab("Моя страница", MainView.class);
 
-        Tab personalTab = new Tab(new RouterLink("Моя страница", MainView.class));
+        if(roles.contains("ROLE_MODERATOR")) {
+            addTab("Заявки на регистрацию", RegistrationRequestsPage.class);
+            addTab("Регистрация пользователя", RegistrationPage.class);
+        }
 
-        Tab personalCoursesTab = new Tab(new RouterLink("Мои курсы", CoursesPage.class));
-
-        Tab scheduleTab = new Tab(new RouterLink("Расписание", SchedulePage.class));
-
-        //todo проверять роль модератора
-        Tab requestsTab = new Tab(new RouterLink("Заявки на регистрацию", RegistrationRequestsPage.class));
-
-        tabs.add(personalTab, personalCoursesTab, scheduleTab, requestsTab);
+        if(roles.contains("ROLE_TEACHER") || roles.contains("ROLE_STUDENT")) {
+            addTab("Мои курсы", CoursesPage.class);
+            addTab("Расписание", SchedulePage.class);
+        }
 
         addToDrawer(tabs);
+    }
+
+    private void addTab(String title, Class pageClass) {
+        Tab tab = new Tab(new RouterLink(title, pageClass));
+        tabs.add(tab);
     }
 }
