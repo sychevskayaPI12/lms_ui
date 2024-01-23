@@ -83,7 +83,7 @@ public class SchedulePage extends VerticalLayout {
         VerticalLayout layout = new VerticalLayout();
         WeekScheduler scheduler = studyClient.getStudentScheduler(userProfile.getStudentInfo().getGroupCode(), false);
 
-        for(short dayOfWeek = 1; dayOfWeek< 6; dayOfWeek++) {
+        for(short dayOfWeek = 1; dayOfWeek <= 6; dayOfWeek++) {
             VerticalLayout dayLayout = getDailyLayoutStyled(dayOfWeek);
             List<SchedulerItem> daily = scheduler.getWeekClasses().get(dayOfWeek);
 
@@ -105,7 +105,7 @@ public class SchedulePage extends VerticalLayout {
         VerticalLayout layout = new VerticalLayout();
         WeekScheduler scheduler = studyClient.getTeacherScheduler(userProfile.getUserProfileInfo().getLogin(), false);
 
-        for(short dayOfWeek = 1; dayOfWeek< 6; dayOfWeek++) {
+        for(short dayOfWeek = 1; dayOfWeek <= 6; dayOfWeek++) {
             VerticalLayout dayLayout = getDailyLayoutStyled(dayOfWeek);
             List<SchedulerItem> daily = scheduler.getWeekClasses().get(dayOfWeek);
 
@@ -134,7 +134,7 @@ public class SchedulePage extends VerticalLayout {
 
         dayLayout.getStyle().set("border", "1px solid lightsteelblue")
                 .set("border-radius", "var(--lumo-border-radius-s)");
-        dayLayout.setWidth("80%");
+        dayLayout.setWidth("90%");
         return dayLayout;
     }
 

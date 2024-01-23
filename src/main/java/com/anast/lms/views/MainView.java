@@ -82,6 +82,10 @@ public class MainView extends VerticalLayout {
                 VerticalLayout teacherHelloLayout = new VerticalLayout();
                 //todo
                 //teacherHelloLayout.add(new Label(profileInfo.getTeacherInfo().toString()));
+                profileInfo.getTeacherInfo().getPositions().forEach(pos -> {
+                    Label posLabel = new Label(pos.toString());
+                    teacherHelloLayout.add(posLabel);
+                });
                 teacherHelloLayout.getStyle()
                         //lavenderblush
                         .set("background-color", "lavender")
