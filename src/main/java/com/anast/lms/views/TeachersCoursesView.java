@@ -1,16 +1,22 @@
 package com.anast.lms.views;
 
 import com.anast.lms.model.CourseSearchType;
+import com.anast.lms.model.Discipline;
+import com.anast.lms.model.DisciplineInstance;
 import com.anast.lms.model.course.Course;
 import com.anast.lms.model.profile.UserProfile;
 import com.anast.lms.service.StudyUtils;
+import com.anast.lms.service.external.CourseServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -30,6 +36,7 @@ import java.util.stream.Collectors;
 public class TeachersCoursesView extends VerticalLayout {
 
     private final StudyServiceClient studyClient;
+    private final CourseServiceClient courseServiceClient;
     private final UserProfile userProfile;
 
     private VerticalLayout coursesListLayout;
@@ -37,8 +44,9 @@ public class TeachersCoursesView extends VerticalLayout {
     private Select<String> specialtySelect;
 
 
-    public TeachersCoursesView(StudyServiceClient studyClient, UserProfile userProfile) {
+    public TeachersCoursesView(StudyServiceClient studyClient, CourseServiceClient courseServiceClient, UserProfile userProfile) {
         this.studyClient = studyClient;
+        this.courseServiceClient = courseServiceClient;
         this.userProfile = userProfile;
 
         setWidthFull();
@@ -52,7 +60,11 @@ public class TeachersCoursesView extends VerticalLayout {
             return;
         }
 
-        HorizontalLayout filterLayout = new HorizontalLayout();
+        HorizontalLayout barLayout = new HorizontalLayout();
+
+        Button createButton = new Button("Создать курс", new Icon(VaadinIcon.PLUS));
+        createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        createButton.addClickListener(e -> createAndShowDialog(userProfile.getUserProfileInfo().getLogin()));
 
         select = new Select<>();
         select.setItems(Arrays.stream(CourseSearchType.values())
@@ -71,8 +83,7 @@ public class TeachersCoursesView extends VerticalLayout {
         clearButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         clearButton.addClickListener(e -> clearButtonListener());
 
-        //todo filters fields + button
-        filterLayout.add(select, specialtySelect, searchButton, clearButton);
+        barLayout.add(createButton, select, specialtySelect, searchButton, clearButton);
 
         coursesListLayout = new VerticalLayout();
         coursesListLayout.setPadding(false);
@@ -86,7 +97,7 @@ public class TeachersCoursesView extends VerticalLayout {
                 .set("border-bottom", "1px solid var(--lumo-contrast-20pct)")
                 .set("padding", "var(--lumo-space-m)");
 
-        add(filterLayout, scroller);
+        add(barLayout, scroller);
 
     }
 
@@ -149,5 +160,54 @@ public class TeachersCoursesView extends VerticalLayout {
                 course.getDiscipline().getSemester(),
                 course.getDiscipline().getStageName(),
                 course.getDiscipline().getStudyFormShortName());
+    }
+
+    private void createAndShowDialog(String login) {
+
+        List<DisciplineInstance> disciplineInstances = studyClient.getTeacherDisciplines(login);
+        Dialog dialog = new Dialog();
+        dialog.setWidth("50%");
+        VerticalLayout dialogLayout = createDialogLayout(dialog, disciplineInstances);
+        dialog.add(dialogLayout);
+
+        dialog.open();
+    }
+
+    private VerticalLayout createDialogLayout(Dialog dialog, List<DisciplineInstance> disciplineInstances) {
+        H2 headline = new H2("Добавить новый курс");
+        headline.getStyle().set("margin", "var(--lumo-space-m) 0 0 0")
+                .set("font-size", "1.5em").set("font-weight", "bold");
+
+        Select<DisciplineInstance> disciplineInstanceSelect = new Select<>();
+        disciplineInstanceSelect.setLabel("Дисциплина");
+        disciplineInstanceSelect.setItems(disciplineInstances);
+        //todo формировать более полную строку
+        disciplineInstanceSelect.setItemLabelGenerator(Discipline::getTitle);
+
+        Button confirmButton = new Button("Создать");
+        confirmButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        confirmButton.setEnabled(false);
+        confirmButton.addClickListener(c-> {
+            if (disciplineInstanceSelect.getValue() != null) {
+                courseServiceClient.createNewCourse(disciplineInstanceSelect.getValue().getId());
+                fillCoursesList(true);
+                dialog.close();
+            }
+
+        });
+        disciplineInstanceSelect.addValueChangeListener(e -> confirmButton.setEnabled(true));
+
+        Button cancelButton = new Button("Отмена", e -> dialog.close());
+
+        HorizontalLayout buttonLayout = new HorizontalLayout(confirmButton, cancelButton);
+        buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+
+        VerticalLayout dialogLayout = new VerticalLayout(headline, disciplineInstanceSelect, buttonLayout);
+        dialogLayout.setPadding(false);
+        dialogLayout.setAlignItems(FlexComponent.Alignment.STRETCH);
+        dialogLayout.setWidthFull();
+
+        return dialogLayout;
+
     }
 }
