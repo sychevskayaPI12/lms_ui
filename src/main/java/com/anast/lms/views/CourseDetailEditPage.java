@@ -21,6 +21,7 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
+import com.vaadin.flow.component.upload.UploadI18N;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
@@ -30,6 +31,7 @@ import javax.validation.constraints.NotNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -405,7 +407,53 @@ public class CourseDetailEditPage extends VerticalLayout implements HasUrlParame
             appendResources(contentLayout, List.of(newModuleResource), true);
         });
 
+        materialUpload.setI18n(createUploadI18n());
+
         parentLayout.add(materialUpload);
+    }
+
+    private UploadI18N createUploadI18n() {
+        UploadI18N uploadI18N = new UploadI18N();
+
+        //general error
+        uploadI18N.setError( new UploadI18N.Error() );
+        uploadI18N.getError().setFileIsTooBig( "Размер файла превышает 2 Мб" );
+        uploadI18N.getError().setIncorrectFileType( "Расширение должно соответствовать .pdf, .jpg или .png" );
+        uploadI18N.getError().setTooManyFiles( "Нужно прикрепить не более 1 файла" );
+
+        //add files
+        uploadI18N.setAddFiles( new UploadI18N.AddFiles() );
+        uploadI18N.getAddFiles().setOne( "Загрузить файл" );
+        uploadI18N.getAddFiles().setMany( "Загрузить файлы" );
+
+        uploadI18N.setDropFiles(new UploadI18N.DropFiles());
+        uploadI18N.getDropFiles().setOne("Перетащите файл...");
+        uploadI18N.getDropFiles().setMany("Перетащите файлы...");
+
+        //uploading
+        uploadI18N.setUploading( new UploadI18N.Uploading() );
+        //uploading errors
+        uploadI18N.getUploading().setError( new UploadI18N.Uploading.Error() );
+        uploadI18N.getUploading().getError().setForbidden( "В доступе отказано!" );
+        uploadI18N.getUploading().getError().setServerUnavailable( "Сервер недоступен!" );
+        uploadI18N.getUploading().getError().setUnexpectedServerError( "Внезапная ошибка сервера!" );
+        //uploading status
+        uploadI18N.getUploading().setStatus( new UploadI18N.Uploading.Status() );
+        uploadI18N.getUploading().getStatus().setConnecting("Подключение...");
+        uploadI18N.getUploading().getStatus().setHeld("Ожидание...");
+        uploadI18N.getUploading().getStatus().setProcessing("Обработка...");
+        uploadI18N.getUploading().getStatus().setStalled("Ожидание...");
+        //uploading remaining time
+        uploadI18N.getUploading().setRemainingTime( new UploadI18N.Uploading.RemainingTime() );
+        uploadI18N.getUploading().getRemainingTime().setPrefix( "Осталось" );
+        uploadI18N.getUploading().getRemainingTime().setUnknown( "Неизвестно" );
+
+        uploadI18N.setCancel( "Отмена" );
+
+        uploadI18N.setUnits( new UploadI18N.Units() );
+        uploadI18N.getUnits().setSize( new ArrayList<>(Arrays.asList("б", "кБ", "Мб", "Гб", "Тб", "Пб", "Еб", "Зб", "Йб") ));
+
+        return uploadI18N;
     }
 
     /**
