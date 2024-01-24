@@ -29,15 +29,22 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         login.setAction("login");
 
         Label regLab = new Label("Вы новый пользователь? Оставьте заявку!");
+        regLab.setWidth("86%");
 
         Button registrationButton = new Button("Регистрация");
         registrationButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         registrationButton.addClickListener(e ->
                 registrationButton.getUI().ifPresent(ui -> ui.navigate(RegistrationPage.class)));
-        registrationButton.setWidth("18.5%");
+        registrationButton.setWidth("86%");
 
 
-        add(login, regLab, registrationButton);
+        VerticalLayout container = new VerticalLayout(login, regLab, registrationButton);
+        container.setAlignItems(Alignment.CENTER);
+        container.setJustifyContentMode(JustifyContentMode.CENTER);
+        container.setWidth("25%");
+        container.setSpacing(false);
+        container.setPadding(false);
+        add(container);
     }
 
     @Override
