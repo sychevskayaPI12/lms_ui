@@ -1,12 +1,14 @@
 package com.anast.lms.views;
 
+import com.anast.lms.model.RequestState;
 import com.anast.lms.model.SchedulerItem;
 import com.anast.lms.model.WeekScheduler;
+import com.anast.lms.model.profile.RegistrationRequest;
 import com.anast.lms.model.profile.UserProfile;
 import com.anast.lms.service.StudyUtils;
+import com.anast.lms.service.external.ModerationServiceClient;
 import com.anast.lms.service.external.StudyServiceClient;
 import com.anast.lms.service.security.SecurityService;
-import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Label;
@@ -14,6 +16,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.time.LocalDate;
@@ -29,11 +32,13 @@ public class MainView extends VerticalLayout {
 
     private final SecurityService securityService;
     private final StudyServiceClient studyClient;
+    private final ModerationServiceClient moderationClient;
 
 
-    public MainView(SecurityService securityService, StudyServiceClient studyClient) {
+    public MainView(SecurityService securityService, StudyServiceClient studyClient, ModerationServiceClient moderationClient) {
         this.securityService = securityService;
         this.studyClient = studyClient;
+        this.moderationClient = moderationClient;
         build();
     }
 
@@ -58,12 +63,14 @@ public class MainView extends VerticalLayout {
 
     private void addInfoLayout(UserProfile profileInfo) {
         HorizontalLayout infoLayout = new HorizontalLayout();
+        add(infoLayout);
 
         List<String> roles = securityService.getAuthenticatedUser().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
         if(roles.contains("ROLE_MODERATOR")) {
             addModeratorLabel(infoLayout);
+            addRequestsCount();
         }
         if(roles.contains("ROLE_STUDENT")) {
             addStudentLabel(infoLayout, profileInfo);
@@ -71,8 +78,18 @@ public class MainView extends VerticalLayout {
         if(roles.contains("ROLE_TEACHER")) {
             addTeacherLabel(infoLayout, profileInfo);
         }
+    }
 
-        add(infoLayout);
+    private void addRequestsCount() {
+
+        List<RegistrationRequest> requests = moderationClient.getRegistrationRequests(RequestState.unprocessed.getValue());
+        int count = requests != null ? requests.size() : 0;
+        Label countLabel = new Label("Новых заявок: " + count);
+        RouterLink link = new RouterLink("Перейти к управлению заявками", RegistrationRequestsPage.class);
+
+        VerticalLayout requestCountLayout = new VerticalLayout(countLabel, link);
+        requestCountLayout.setPadding(true);
+        add(requestCountLayout);
     }
 
     private void addStudentLabel(HorizontalLayout infoLayout, UserProfile profileInfo) {
